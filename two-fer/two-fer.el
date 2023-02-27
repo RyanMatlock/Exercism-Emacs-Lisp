@@ -8,8 +8,8 @@
   (let ((two-fer-string (lambda (n)
                          (format "One for %s, one for me." n))))
     (if name
-        (two-fer-string name)
-      (two-fer-string "you"))))
+        (funcall two-fer-string name)
+      (funcall two-fer-string "you"))))
 
 (provide 'two-fer)
 ;;; two-fer.el ends here
