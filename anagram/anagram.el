@@ -5,7 +5,7 @@
 (defun anagrams-for (subject candidates)
   "Determine which, if any, of the words in candidates are anagrams of
 subject."
-  (defun word-to-letters-signature (str)
+  (defun word-to-letters-signature (word)
     "Convert a word to an alphabetically ascending list of letters, including
 repeats.
 
@@ -13,7 +13,7 @@ Words that are anagrams should possess the same ordered letter list,
 e.g. 'stop' and 'pots' should both produce ('o' 'p' 's' 't')."
     ;; technically, the outer mapcar isn't necessary, but the output is chars
     ;; AKA ints, so converting them to strings makes debugging easier
-    (sort (mapcar #'string (mapcar #'identity (downcase str)))
+    (sort (mapcar #'string (mapcar #'identity (downcase word)))
           'string<))
   (defun identical-letter-list-p (xs ys)
     "Determine if two ordered lists of lowercase letters are identical."
@@ -26,6 +26,11 @@ e.g. 'stop' and 'pots' should both produce ('o' 'p' 's' 't')."
       ;; if xs and ys are empty, then you've made it to the end without
       ;; differences, so they're the same => t
       t))
+  (defun anagrams-p (subj cand)
+    "Determine if cand is an anagram of subj."
+    (and (not (string= (downcase subj) (downcase cand)))
+         (identical-letter-list-p (word-to-letters-signature subj)
+                                  (word-to-letters-signature cand))))
   (defun anagrams-for-helper (subject candidates anagrams)
     "Build a list of anagrams of subject from candidates."
     ;; (let ((dsubject (downcase subject))
