@@ -33,18 +33,21 @@ e.g. 'stop' and 'pots' should both produce ('o' 'p' 's' 't')."
                                   (word-to-letters-signature cand))))
   (defun anagrams-for-helper (subject candidates anagrams)
     "Build a list of anagrams of subject from candidates."
-    ;; (let ((dsubject (downcase subject))
-    ;;       (candidate (car candidates))))
-    (cond
-     ;; when out of candidates, return anagrams
-     ((not candidates) anagrams)
-     ;; if subject and candidate are different lengths, they can't be anagrams
-     ((/= (length subject) (length (car candidates)))
-      (anagrams-for-helper subject (cdr candidates) anagrams))
-     ;; if subject is identical to candidate, they are not anagrams
-     ((string= (downcase subject) (cons (downcase candidates)))
-      (anagrams-for-helper subject (car candidates) anagrams))))
-  (anagrams-for-helper subjects candidates '()))
+    ;; only using nested if statements instead of cond due to let statement
+    ;; if candidates is nil, you can't take the cdr of it
+    (if candidates
+        (let ((candidate (car candidates))
+              (rest (cdr candidates)))
+          (if (anagrams-p subject candidate)
+              (anagrams-for-helper subject rest (cons candidate anagrams))
+            (anagrams-for-helper subject rest anagrams)))
+      ;; return anagrams when out of candidates
+      anagrams))
+  (anagrams-for-helper subject candidates '()))
+
+;; (anagrams-for "stop" '("PoTs" "nope" "TOPS" "splat" "SToP"))
+;; ("TOPS" "PoTs")
+;; now let's test it
 
 (provide 'anagram)
 ;;; anagram.el ends here
