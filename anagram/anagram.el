@@ -42,7 +42,8 @@ e.g. 'stop' and 'pots' should both produce ('o' 'p' 's' 't')."
               (anagrams-for-helper subject rest (cons candidate anagrams))
             (anagrams-for-helper subject rest anagrams)))
       ;; return anagrams when out of candidates
-      anagrams))
+      ;; reverse anagrams to present them in order found in candidates
+      (reverse anagrams)))
   (anagrams-for-helper subject candidates '()))
 
 ;; (anagrams-for "stop" '("PoTs" "nope" "TOPS" "splat" "SToP"))
