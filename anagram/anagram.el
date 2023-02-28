@@ -21,6 +21,14 @@
 ;; ELISP> (and (not '()) (not '("a" "b")))
 ;; nil
 
+;; ELISP> (identical-letter-list-p '("a" "b") '("a" "c"))
+;; nil
+;; ELISP> (identical-letter-list-p '("a" "b") '("a" "b"))
+;; t
+;; ELISP> (identical-letter-list-p (word-to-letters-signature "stop")
+;; (word-to-letters-signature "pots"))
+;; t
+
 (defun anagrams-for (subject candidates)
   "Determine which, if any, of the words in candidates are anagrams of
 subject."
@@ -34,20 +42,31 @@ e.g. 'stop' and 'pots' should both produce ('o' 'p' 's' 't')."
     ;; AKA ints, so converting them to strings makes debugging easier
     (sort (mapcar #'string (mapcar #'identity (downcase str)))
           'string<))
+  ;; (defun identical-letter-list-p (xs ys)
+  ;;   "Determine if two ordered lists of lowercase letters are identical."
+  ;;   ;; there's probably a cleverer way of doing this with and and/or or
+  ;;   ;; functions and omitting the cond entirely
+  ;;   (cond
+  ;;    ;; if xs and ys are empty, then they're the same
+  ;;    ((and (not xs) (not ys)) t
+  ;;     ;; redundant
+  ;;     ;; ;; if xs and ys are different lengths, they're not the same
+  ;;     ;; ((not (eq (length xs) (length ys))) nil)
+  ;;     ;; if the first element is different, they're not the same
+  ;;     ((not (string= (car xs) (car ys))) nil)
+  ;;     ;; recursive step: check next eleemnt
+  ;;     (t identical-letter-list-p (cdr xs) (cdr ys)))))
   (defun identical-letter-list-p (xs ys)
     "Determine if two ordered lists of lowercase letters are identical."
-    ;; there's probably a cleverer way of doing this with and and/or or
-    ;; functions and omitting the cond entirely
-    (cond
-     ;; if xs and ys are empty, then they're the same
-     ((and (not xs) (not ys)) t
-      ;; redundant
-      ;; ;; if xs and ys are different lengths, they're not the same
-      ;; ((not (eq (length xs) (length ys))) nil)
-      ;; if the first element is different, they're not the same
-      ((not (string= (car xs) (car ys))) nil)
-      ;; recursive step: check next eleemnt
-      (t identical-letter-list-p (cdr xs) (cdr ys)))))
+    (if (and xs ys)
+        (and
+         ;; check that first elements are the same
+         (string= (car xs) (car ys))
+         ;; recursive step
+         (identical-letter-list-p (cdr xs) (cdr ys)))
+      ;; if xs and ys are empty, then you've made it to the end without
+      ;; differences, so they're the same => t
+      t))
   (defun anagrams-for-helper (subject candidates anagrams)
     "Build a list of anagrams of subject from candidates."
     ;; (let ((dsubject (downcase subject))
