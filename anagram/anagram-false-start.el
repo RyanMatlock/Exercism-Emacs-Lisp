@@ -113,3 +113,37 @@ list, e.g. apple:
     ;; recursive step: check next eleemnt
     (t identical-letter-list-p (cdr xs) (cdr ys)))))
 
+;; bug in here
+(defun identical-letter-list-p (xs ys)
+  "Determine if two ordered lists of lowercase letters are identical."
+  (if (and xs ys)
+      (and
+       ;; check that first elements are the same
+       (string= (car xs) (car ys))
+       ;; recursive step
+       (identical-letter-list-p (cdr xs) (cdr ys)))
+    ;; if xs and ys are empty, then you've made it to the end without
+    ;; differences, so they're the same => t
+    t))
+
+;; weird: it's failing
+;; (anagrams-for "good" '("dog" "goody"))
+;; ("dog" "goody")
+
+;; ELISP> (anagrams-p "good" "dog")
+;; t
+;; ELISP> (anagrams-p "good" "goody")
+;; t
+;; weirder
+
+;; ELISP> (word-to-letters-signature "good")
+;; ("d" "g" "o" "o")
+;; ELISP> (word-to-letters-signature "dog")
+;; ("d" "g" "o")
+;; ELISP> (word-to-letters-signature "goody")
+;; ("d" "g" "o" "o" "y")
+;; so it must be stopping at ("d" "g" "o")
+
+;; the issue was that if the lists weren't the same length,
+;; identical-letter-list-p returned t, so to make things easy, I'll only pass
+;; in lists of same length

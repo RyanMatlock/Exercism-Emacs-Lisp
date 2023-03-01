@@ -16,7 +16,8 @@ e.g. 'stop' and 'pots' should both produce ('o' 'p' 's' 't')."
     (sort (mapcar #'string (mapcar #'identity (downcase word)))
           'string<))
   (defun identical-letter-list-p (xs ys)
-    "Determine if two ordered lists of lowercase letters are identical."
+    "Determine if two ordered lists of lowercase letters *of same length* are
+identical. anagrams-p will ensure that they're the same length."
     (if (and xs ys)
         (and
          ;; check that first elements are the same
@@ -29,6 +30,7 @@ e.g. 'stop' and 'pots' should both produce ('o' 'p' 's' 't')."
   (defun anagrams-p (subj cand)
     "Determine if cand is an anagram of subj."
     (and (not (string= (downcase subj) (downcase cand)))
+         (eq (length subj) (length cand))
          (identical-letter-list-p (word-to-letters-signature subj)
                                   (word-to-letters-signature cand))))
   (defun anagrams-for-helper (subject candidates anagrams)
@@ -45,10 +47,6 @@ e.g. 'stop' and 'pots' should both produce ('o' 'p' 's' 't')."
       ;; reverse anagrams to present them in order found in candidates
       (reverse anagrams)))
   (anagrams-for-helper subject candidates '()))
-
-;; (anagrams-for "stop" '("PoTs" "nope" "TOPS" "splat" "SToP"))
-;; ("TOPS" "PoTs")
-;; now let's test it
 
 (provide 'anagram)
 ;;; anagram.el ends here
