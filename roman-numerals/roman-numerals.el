@@ -28,9 +28,21 @@ the form (OOM . multiple)"
         (defun oom-mult-helper (n base-values)
           (let* ((oom (car base-values))
                  (quotient (/ n oom)))
-            (if (> quotient 0)
-                (cons oom quotient)
-              (oom-mult-helper n (cdr base-values)))))
+            (cond
+             ;; maybe I don't need a special case for 9 because I just promote
+             ;; it to the next OOM and subtrac the next OOM for it
+             ;; wait, no
+             ;; maybe figure out the processing first, and then write this to
+             ;; fit with that implementation
+             ;; ;; special case for 9
+             ;; ;; needed because in Roman numerals
+             ;; ;; 9 = 10 - 1 != 5 + (5 - 1), and 4 = 5 - 1
+             ;; ;; wheras 6 = 5 + 1, 7 = 5 + 2, and 8 = 5 + 3
+             ;; ((and (not (eq (mod oom 10)))
+             ;;       (eq quotient 4))
+             ;;  (cons (oom 9)))
+             ((> quotient 0) (cons oom quotient))
+             (t (oom-mult-helper n (cdr base-values))))))
         (oom-mult-helper n base-values))))
   )
 
@@ -44,6 +56,7 @@ the form (OOM . multiple)"
 ;; ELISP> (roman-oom-and-multple 4)
 ;; (1 . 4)
 ;; this might not be the right strategy given the way 9 gets broken up
+;; on second thought, what if I had a special case for 9?
 
 (provide 'roman-numerals)
 ;;; roman-numerals.el ends here
