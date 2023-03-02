@@ -35,7 +35,9 @@ as strings."
   (if (eq (length dna1) (length dna2))
       (let ((dna1-list (string-to-list dna1))
             (dna2-list (string-to-list dna2)))
-        (seq-filter 'cons-cell-eq-p (zip-lists-to-alist dna1-list dna2-list)))
+        (length (seq-filter
+                 (lambda (x) (not (cons-cell-eq-p x)))
+                 (zip-lists-to-alist dna1-list dna2-list))))
     (error "DNA segment lengths don't match.")))
 
 ;; -- IELM testing --
