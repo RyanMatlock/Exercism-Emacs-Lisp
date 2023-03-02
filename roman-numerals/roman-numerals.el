@@ -43,6 +43,7 @@ the form (OOM . multiple)"
 ;; (5 . 1)
 ;; ELISP> (roman-oom-and-multple 4)
 ;; (1 . 4)
+;; this might not be the right strategy given the way 9 gets broken up
 
 (provide 'roman-numerals)
 ;;; roman-numerals.el ends here
