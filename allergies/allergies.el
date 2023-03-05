@@ -6,6 +6,8 @@
 ;;; is that \sum_{i=0}^k 2^i < 2^{k+1}, so you can figure out the coefficients
 ;;; by successively subtracting the largest c_i ≤ A.
 
+;; normally, I wouldn't want to pollute my namespace, but I think in this case
+;; it makes sense
 (defvar allergen-lookup-alist
   ;; using number as key to make it easier to look up allergens later
   '((1 . "eggs")
@@ -32,7 +34,26 @@
               prev
             (highest-power-of-2-helper n next)))))
     (highest-power-of-2-helper n 1))
-  )
+  (defun allergen-list-helper (remaining-score score-decomposition-list)
+    (if (> remaining-score 0)
+        (let ((allergen-num (highest-power-of-2 remaining-score)))
+          (allergen-list-helper (- remaining-score allergen-num)
+                                (cons allergen-num score-decomposition-list)))
+      ;; actually, I don't need to reverse the list because I want to start
+      ;; with eggs and end with cats
+      ;; (reverse score-decomposition-list)
+      score-decomposition-list))
+  (defun scores-to-allergens (scores)
+    "Transform a list of allergen numbers into a list of allergen strings."
+    (defun scores-to-allergens-helper (scores allergen-list)
+      (if scores
+          (let* ((score (car scores))
+                 (allergen (alist-get score allergen-lookup-alist)))
+            (scores-to-allergens-helper (cdr scores)
+                                        (cons allergen allergen-list)))
+        (reverse allergen-list)))
+    (scores-to-allergens-helper scores '()))
+  (scores-to-allergens (allergen-list-helper score '())))
 
 (defun allergic-to-p (score allergen)
 "Check if Allergic to allergen based on SCORE and ALLERGEN."
@@ -53,6 +74,16 @@
 ;; *** Eval error ***  Argument must be greater than or equal to 1.
 ;; ELISP> (highest-power-of-2 127)
 ;; 64 (#o100, #x40, ?@)
+
+;; ELISP> (allergen-list 34)
+;; (32 2)
+;; ELISP> (allergen-list 34)
+;; (2 32)
+;; ELISP> (allergen-list 203)
+;; (1 2 8 64 128)
+
+;; ELISP> (allergen-list 203)
+;; ("eggs" "peanuts" "strawberries" "pollen" "cats")
 
 (provide 'allergies)
 ;;; allergies.el ends here
