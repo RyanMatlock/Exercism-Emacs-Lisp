@@ -49,16 +49,25 @@
       (if scores
           (let* ((score (car scores))
                  (allergen (alist-get score allergen-lookup-alist)))
-            (scores-to-allergens-helper (cdr scores)
-                                        (cons allergen allergen-list)))
+            ;; ensure allergen is defined
+            (if allergen
+                (scores-to-allergens-helper (cdr scores)
+                                        (cons allergen allergen-list))
+              ;; if allergen is undefined, keep on movin'
+              (scores-to-allergens-helper (cdr scores) allergen-list)))
         (reverse allergen-list)))
     (scores-to-allergens-helper scores '()))
   (scores-to-allergens (allergen-list-helper score '())))
 
 (defun allergic-to-p (score allergen)
-"Check if Allergic to allergen based on SCORE and ALLERGEN."
-;;; Code:
-)
+  "Check if Allergic to allergen based on SCORE and ALLERGEN."
+  (defun member-p (obj list)
+    "Works like the member function but returns t if obj is in list instead of
+obj."
+    (if (member obj list)
+        t
+      nil))
+  (member-p allergen (allergen-list score)))
 
 ;; -- IELM testing --
 ;; ELISP> (alist-get 128 allergen-lookup-alist)
@@ -84,6 +93,26 @@
 
 ;; ELISP> (allergen-list 203)
 ;; ("eggs" "peanuts" "strawberries" "pollen" "cats")
+
+;; ELISP> (allergen-list 257)
+;; ("eggs" nil)
+
+;; ELISP> (allergen-list 257)
+;; ("eggs")
+;; ELISP> (allergen-list 2257)
+;; ("eggs" "tomatoes" "pollen" "cats")
+;; ELISP> (allergen-list 0)
+;; nil
+
+;; ELISP> (member "cats" (allergen-list 2257))
+;; ("cats")
+;; ELISP> (member "dogs" (allergen-list 2257))
+;; nil
+
+;; ELISP> (allergic-to-p 2257 "cats")
+;; t
+;; ELISP> (allergic-to-p 2257 "dust")
+;; nil
 
 (provide 'allergies)
 ;;; allergies.el ends here
