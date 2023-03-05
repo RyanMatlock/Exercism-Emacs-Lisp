@@ -18,6 +18,8 @@ initial value of 1."
       ;; setcdr does; that shouldn't matter given that in either branch of the
       ;; if statement, you're returning the updated alist
       (cons (cons key 1) alist))))
+  ;; looking at word-coun-test.el, it appears that the alist is good enough,
+  ;; and I didn't have to format it into a string
   (defun wc-alist-formatter (wc-alist acc)
     (let ((entry (car wc-alist)))
       (if entry
@@ -45,9 +47,9 @@ initial value of 1."
      (replace-regexp-in-string
       "^[[:punct:]]+" "" word)))
   (let* ((words (mapcar #'downcase (split-string sentence "[[:blank:]\n]+")))
-         (processed-words (mapcar #'strip-punctuation-from-word words)))
-    ;; (wc-helper processed-words '())
-    (wc-alist-formatter (wc-helper processed-words '()) '())))
+         (processed-words (mapcar #'strip-punctuation-from-word words)))    
+    ;; (wc-alist-formatter (wc-helper processed-words '()) '())
+    (wc-helper processed-words '())))
 
 ;; -- IELM testing --
 ;; ELISP> (wc-alist-formatter '(("foo" . 2) ("bar". 3)))
