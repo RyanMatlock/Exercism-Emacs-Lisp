@@ -20,13 +20,39 @@
 
 (defun allergen-list (score)
   "List all allergens with a given SCORE."
-;;; Code:
+  (defun highest-power-of-2 (n)
+    "Return largest p = 2^i ≤ n."
+    (if (< n 1)
+        (error "Argument must be greater than or equal to 1.")
+      (defun highest-power-of-2-helper (n prev)
+        (let ((next (* prev 2)))
+          (if
+              ;; if (n - next) < 0
+              (< (- n next) 0)
+              prev
+            (highest-power-of-2-helper n next)))))
+    (highest-power-of-2-helper n 1))
   )
 
 (defun allergic-to-p (score allergen)
 "Check if Allergic to allergen based on SCORE and ALLERGEN."
 ;;; Code:
 )
+
+;; -- IELM testing --
+;; ELISP> (alist-get 128 allergen-lookup-alist)
+;; "cats"
+
+;; ELISP> (highest-power-of-2 32)
+;; 32 (#o40, #x20, ? )
+;; ELISP> (highest-power-of-2 1204)
+;; 1024 (#o2000, #x400)
+;; ELISP> (highest-power-of-2 1)
+;; 1 (#o1, #x1, ?\C-a)
+;; ELISP> (highest-power-of-2 0)
+;; *** Eval error ***  Argument must be greater than or equal to 1.
+;; ELISP> (highest-power-of-2 127)
+;; 64 (#o100, #x40, ?@)
 
 (provide 'allergies)
 ;;; allergies.el ends here
