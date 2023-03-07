@@ -103,7 +103,8 @@ the form (OOM . multiple)"
              ((> quotient 0) (cons oom quotient))
              (t (get-largest-oom-mult n (cdr base-values))))))
         (defun roman-oom-mult-helper (n oom-mult-alist)
-          (if n
+          ;; 🤦 0 evaluates to t, so you need to check that n != 0
+          (if (not (eq n 0))
               (let* ((oom-mult-entry (get-largest-oom-mult n base-values))
                      (oom (car oom-mult-entry))
                      (mult (cdr oom-mult-entry))
@@ -140,8 +141,6 @@ numeral. e.g.
             (rn-formatter-helper
              (cdr oom-mult-alist)
              (cons (oom-mult-to-numeral-string oom-mult-elem) accumulator))
-          ;; (mapconcat #'string accumulator "")
-          ;; (reverse accumulator)
           (mapconcat #'identity (reverse accumulator) ""))))
     (rn-formatter-helper oom-mult-alist '()))
   (let ((simple (simple-roman-lookup value)))
@@ -289,6 +288,29 @@ numeral. e.g.
 
 ;; ELISP> (roman-numeral-alist-formatter '((10 . 1) (1 . 3)))
 ;; "XIII"
+
+;; ELISP> (to-roman 13)
+;; *** Eval error ***  Symbol’s function definition is void: roman-oom-and-multiple-alist
+;; ELISP> (roman-numeral-alist-formatter '((50 . 1) (10 . 1) (1 . 9)))
+;; "LXIX"
+;; ELISP> (roman-numeral-alist-formatter '((10 . 1) (1 . 4)))
+;; "XIV"
+
+;; ELISP> (roman-oom-mult-helper 13 '())
+;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
+;; ELISP> (if 0 "foo" "bar")
+;; "foo"
+;; ELISP> (roman-oom-mult-helper 13 '())
+;; ((10 . 1)
+;;  (1 . 3))
+
+;; ELISP> (to-roman 13)
+;; "XIII"
+;; ELISP> (to-roman 14)
+;; "XIV"
+;; ELISP> (to-roman 19)
+;; "XVIV"
+;; good, good, bad
 
 (provide 'roman-numerals)
 ;;; roman-numerals.el ends here
