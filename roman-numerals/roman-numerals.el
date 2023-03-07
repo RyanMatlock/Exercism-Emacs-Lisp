@@ -73,7 +73,7 @@ lack of a better term), i.e. 5, 50, 500, rather than the 10s series, i.e. 1,
       (repeat-string-helper str n '()))
     (defun roman-oom-and-multiple-alist (n)
       "Calculate the Roman numeral 'order of magnitude,' which goes in 5s
-instead of 10s, as well as the multple of that OOM and return it as an alist in
+instead of 10s, as well as the multiple of that OOM and return it as an alist in
 the form (OOM . multiple)"
       (let
           ;; I need the base values in descending order because I need to pick
@@ -147,7 +147,7 @@ numeral. e.g.
   ;;   ;;   else-action)
   ;;   (or simple
   ;;       (roman-numeral-alist-formatter (roman-oom-and-multiple-alist value))))
-  (roman-oom-and-multple-alist value)
+  (roman-oom-and-multiple-alist value)
   ))
 
 ;; -- IELM testing --
@@ -164,6 +164,23 @@ numeral. e.g.
 ;; ELISP> (5s-oom-p 50)
 ;; t
 ;; very confusing
+
+;; ELISP> (to-roman 9)
+;; ((5 . 1)
+;;  (1 . 4))
+;; still not working 🤔
+
+;; ELISP> (to-roman 9)
+;; ((5 . 1)
+;;  (1 . 4))
+
+;; ELISP> (to-roman 90)
+;; ((50 . 1)
+;;  (10 . 4)
+
+;; so 9s always take the form of ((5s-oom . 1) ((prev-oom 5s-oom) . 4)), so if
+;; I just look for that pattern, I should be able to turn it into
+;; ((prev-oom 5s-oom) . 9), which is what the formatter is expecting
 
 (provide 'roman-numerals)
 ;;; roman-numerals.el ends here
