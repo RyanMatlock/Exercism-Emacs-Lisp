@@ -2,6 +2,16 @@
 
 ;;; Commentary:
 
+(setq roman-numeral-alist '((0 . "")
+                                (1 . "I")
+                                (5 . "V")
+                                (10 . "X")
+                                (50 . "L")
+                                (100 . "C")
+                                (500 . "D")
+                                (1000 . "M")))
+(setq roman-base-values (mapcar #'car (cdr roman-numeral-alist)))
+
 (defun to-roman (value)
   (let* ((roman-numeral-alist '((0 . "")
                                 (1 . "I")
@@ -48,16 +58,26 @@ should return element if element is in list."
         (pos-in-list-helper element list 0)))
     (defun prev-roman-oom (roman-oom)
       "Return the next-lowest roman-oom (returns nil if roman-oom is 1)."
-      )
+      (let ((pos (position-in-list roman-oom roman-base-values)))
+        (if (and pos (> pos 0))
+            (nth (1- pos) roman-base-values)
+          nil)))
     (defun 10s-oom-p (roman-oom)
       "Determine if roman-oom (order of magnitude) is in the 10s series (for
 lack of a better term), i.e. 1, 10, 100, 1000, rather than the 5s series, i.e.
 5, 50, 500.
 
 This may be helpful in handling the case of 9s."
-      (and
-       ;; do stuff
-       t t))
+      (or (eq roman-oom 1)
+          (eq (/ roman-oom (prev-roman-oom roman-oom)) 2)))
+    (defun repeat-string (str n &optional join)
+      "Repeat str n times separated by join (default: '')."
+      (defun repeat-string-helper (str n str-list)
+        (if (> n 0)
+            (repeat-string-helper str (1- n) (append str str-list))
+          (let ((join (or join "")))
+            (mapconcat #'string str-list join))))
+      (repeat-string-helper str n '()))
     (defun roman-oom-and-multple (n)
       "Calculate the Roman numeral 'order of magnitude,' which goes in 5s
 instead of 10s, as well as the multple of that OOM and return it as an alist in
@@ -109,6 +129,30 @@ the form (OOM . multiple)"
 ;; "bar"
 
 ;; nice
+
+;; ELISP> (position-in-list 10 roman-base-values)
+;; 2 (#o2, #x2, ?\C-b)
+;; ELISP> (nth (1- (position-in-list 10 roman-base-values)) roman-base-values)
+;; 5 (#o5, #x5, ?\C-e)
+;; ELISP> (prev-roman-oom 5)
+;; 1 (#o1, #x1, ?\C-a)
+;; ELISP> (prev-roman-oom 1000)
+;; 500 (#o764, #x1f4)
+
+;; ELISP> (10s-oom-p 1000)
+;; t
+;; ELISP> (10s-oom-p 500)
+;; nil
+;; ELISP> (10s-oom-p 50)
+;; nil
+;; ELISP> (10s-oom-p 1)
+;; t
+
+;; good
+
+;; ELISP> (repeat-string "M" 3)
+;; "MMM"
+;; that will be useful for applying the multiple to the roman-oom
 
 (provide 'roman-numerals)
 ;;; roman-numerals.el ends here
