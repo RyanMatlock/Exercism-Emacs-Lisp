@@ -88,7 +88,7 @@ lack of a better term), i.e. 5, 50, 500, rather than the 10s series, i.e. 1,
               (repeat-string-helper str (1- n) (append str str-list))
             (mapconcat #'string str-list join))))
       (repeat-string-helper str n '()))
-    (defun roman-oom-and-multple-alist (n)
+    (defun roman-oom-and-multiple-alist (n)
       "Calculate the Roman numeral 'order of magnitude,' which goes in 5s
 instead of 10s, as well as the multple of that OOM and return it as an alist in
 the form (OOM . multiple)"
