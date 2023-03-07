@@ -81,14 +81,27 @@ the form (OOM . multiple)"
           ((base-values (reverse roman-base-values)))
         (defun get-largest-oom-mult (n base-values)
           (let* ((oom (car base-values))
+                 (next-smallest-oom (prev-roman-oom oom))
                  (quotient (/ n oom)))
             ;; your issue with 9s is happening somewhere in here
             (cond
+             ;; ((and
+             ;;   ;; convince yourself that these conditions may mean a 9
+             ;;   (eq quotient 1)
+             ;;   (5s-oom-p oom))
+             ;;  )
+             ((and (5s-oom-p oom)
+                   (eq 9 (/ n next-smallest-oom)))
+              (cons next-smallest-oom 9))
              ((> quotient 0) (cons oom quotient))
              (t (get-largest-oom-mult n (cdr base-values))))))
         (defun roman-oom-mult-helper (n oom-mult-alist)
           ;; 🤦 0 evaluates to t, so you need to check that n != 0
           (if (not (eq n 0))
+              ;; 💡 maybe instead of handling 9s in get-largest-oom-mult, I can
+              ;; do a sort of look-ahead here and handle it that way
+              ;; 💡💡 better still: you could do a look behind, and if it's a
+              ;; 9, take the cdr of the alist and cons (oom . 9) to it
               (let* ((oom-mult-entry (get-largest-oom-mult n base-values))
                      (oom (car oom-mult-entry))
                      (mult (cdr oom-mult-entry))
@@ -127,13 +140,30 @@ numeral. e.g.
              (cons (oom-mult-to-numeral-string oom-mult-elem) accumulator))
           (mapconcat #'identity (reverse accumulator) ""))))
     (rn-formatter-helper oom-mult-alist '()))
-  (let ((simple (simple-roman-lookup value)))
-    ;; start using this pattern instead of
-    ;; (if foo
-    ;;     foo
-    ;;   else-action)
-    (or simple
-        (roman-numeral-alist-formatter (roman-oom-and-multiple-alist value))))))
+  ;; (let ((simple (simple-roman-lookup value)))
+  ;;   ;; start using this pattern instead of
+  ;;   ;; (if foo
+  ;;   ;;     foo
+  ;;   ;;   else-action)
+  ;;   (or simple
+  ;;       (roman-numeral-alist-formatter (roman-oom-and-multiple-alist value))))
+  (roman-oom-and-multple-alist value)
+  ))
+
+;; -- IELM testing --
+;; ELISP> (get-largest-oom-mult 9 base-values)
+;; (1 . 9)
+;; ELISP> (to-roman 19)
+;; ((10 . 1)
+;;  (5 . 1)
+;;  (1 . 4))
+;; that's confusing
+
+;; ELISP> (get-largest-oom-mult 90 base-values)
+;; (50 . 1)
+;; ELISP> (5s-oom-p 50)
+;; t
+;; very confusing
 
 (provide 'roman-numerals)
 ;;; roman-numerals.el ends here
