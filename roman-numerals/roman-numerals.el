@@ -3,13 +3,13 @@
 ;;; Commentary:
 
 (setq roman-numeral-alist '((0 . "")
-                                (1 . "I")
-                                (5 . "V")
-                                (10 . "X")
-                                (50 . "L")
-                                (100 . "C")
-                                (500 . "D")
-                                (1000 . "M")))
+                            (1 . "I")
+                            (5 . "V")
+                            (10 . "X")
+                            (50 . "L")
+                            (100 . "C")
+                            (500 . "D")
+                            (1000 . "M")))
 (setq roman-base-values (mapcar #'car (cdr roman-numeral-alist)))
 
 (defun to-roman (value)
@@ -62,6 +62,11 @@ should return element if element is in list."
         (if (and pos (> pos 0))
             (nth (1- pos) roman-base-values)
           nil)))
+    (defun next-roman-oom (roman-oom)
+            (let ((pos (position-in-list roman-oom roman-base-values)))
+        (if (and pos (< pos (length roman-base-values)))
+            (nth (1+ pos) roman-base-values)
+          nil)))
     (defun 10s-oom-p (roman-oom)
       "Determine if roman-oom (order of magnitude) is in the 10s series (for
 lack of a better term), i.e. 1, 10, 100, 1000, rather than the 5s series, i.e.
@@ -70,6 +75,11 @@ lack of a better term), i.e. 1, 10, 100, 1000, rather than the 5s series, i.e.
 This may be helpful in handling the case of 9s."
       (or (eq roman-oom 1)
           (eq (/ roman-oom (prev-roman-oom roman-oom)) 2)))
+    (defun 5s-oom-p (roman-oom)
+      "Determine if roman-oom (order of magnitude) is in the 5s series (for
+lack of a better term), i.e. 5, 50, 500, rather than the 10s series, i.e. 1,
+10, 100, 1000."
+      (not (10s-oom-p roman-oom)))
     (defun repeat-string (str n &optional join)
       "Repeat str n times separated by join (default: '')."
       (defun repeat-string-helper (str n str-list)
@@ -104,6 +114,33 @@ the form (OOM . multiple)"
              ((> quotient 0) (cons oom quotient))
              (t (oom-mult-helper n (cdr base-values))))))
         (oom-mult-helper n base-values))))
+  (defun rn-formatter (oom-mult-alist)
+    "Converts a number like alist ((roman-oom . multiple) ...) into a Roman
+numeral. e.g.
+((10 . 4)
+ (5 . 3)) -> 'XLVIII'."
+    (defun oom-mult-to-numeral-string (oom-mult-alist-elem)
+      (let ((oom (car oom-mult-alist-elem))
+            (mult (cdr oom-mult-alist-elem)))
+        (cond ((eq 4 mult) (concat (alist-get oom roman-numeral-alist)
+                                   (alist-get (next-roman-oom oom)
+                                              roman-numeral-alist)))
+              ((eq 9 mult) (concat (alist-get oom roman-numeral-alist)
+                                   (alist-get (next-roman-oom
+                                               (next-roman-oom oom))
+                                              roman-numeral-alist)))
+              ;; works for mult = 0, 1, 2, 3
+              (t (repeat-string (alist-get oom roman-numeral-alist) mult)))))
+    (defun rn-formatter-helper (oom-mult-alist accumulator)
+      (let ((oom-mult-elem (car oom-mult-alist)))
+        (if oom-mult-elem
+            (rn-formatter-helper
+             (cdr oom-mult-alist)
+             (cons (oom-mult-to-numeral-string oom-mult-elem) accumulator))
+          ;; (mapconcat #'string accumulator "")
+          ;; (reverse accumulator)
+          (mapconcat #'identity (reverse accumulator) ""))))
+    (rn-formatter-helper oom-mult-alist '()))
   (simple-roman-lookup value))
 
 ;; -- IELM testing --
@@ -153,6 +190,63 @@ the form (OOM . multiple)"
 ;; ELISP> (repeat-string "M" 3)
 ;; "MMM"
 ;; that will be useful for applying the multiple to the roman-oom
+
+;; ELISP> (next-roman-oom 50)
+;; 100 (#o144, #x64, ?d)
+
+;; ELISP> (repeat-string "foo" 0)
+;; ""
+;; ELISP> (repeat-string "" 0)
+;; ""
+
+;; ELISP> (mult-to-operation '(10 . 2))
+;; ""
+;; ELISP> (alist-get 10 (mapcar #'car roman-numeral-alist))
+;; nil
+;; ELISP> (eq 10 10)
+;; t
+;; weird
+
+;; ELISP> (alist-get 10 '((1 . "foo") (10 . "bar")))
+;; "bar"
+
+;; ELISP> (mult-to-operation '(10 . 2))
+;; "XX"
+;; got it!
+
+;; ELISP> (mult-to-operation '(10 . 4))
+;; "XL"
+
+;; ELISP> (mult-to-operation '(10 . 9))
+;; "LC"
+;; that's wrong!
+
+;; ELISP> (mult-to-operation '(10 . 9))
+;; "XC"
+;; nice!
+
+;; ELISP> (rn-formatter '((10 . 9) (1 . 9)))
+;; *** Eval error ***  Wrong type argument: characterp, "IX"
+;; ELISP> (rn-formatter '((10 . 9)))
+;; *** Eval error ***  Wrong type argument: characterp, "XC"
+
+;; ELISP> (rn-formatter '((10 . 9) (1 . 9)))
+;; ("IX" "XC")
+
+
+;; ELISP> (rn-formatter '((10 . 9) (1 . 9)))
+;; ("XC" "IX")
+
+;; now we're getting somewhere
+
+;; ELISP> (mapconcat #'identity (rn-formatter '((10 . 9) (1 . 9))) "")
+;; "XCIX"
+
+;; ELISP> (rn-formatter '((10 . 9) (1 . 9)))
+;; "XCIX"
+;; ELISP> (rn-formatter '((50 . 1) (10 . 1) (1 . 9)))
+;; "LXIX"
+;; nice!
 
 (provide 'roman-numerals)
 ;;; roman-numerals.el ends here
