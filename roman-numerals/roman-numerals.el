@@ -99,6 +99,7 @@ the form (OOM . multiple)"
         (defun get-largest-oom-mult (n base-values)
           (let* ((oom (car base-values))
                  (quotient (/ n oom)))
+            ;; your issue with 9s is happening somewhere in here
             (cond
              ((> quotient 0) (cons oom quotient))
              (t (get-largest-oom-mult n (cdr base-values))))))
