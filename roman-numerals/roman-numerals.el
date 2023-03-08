@@ -97,8 +97,10 @@ the form (OOM . multiple)"
              (t (get-largest-oom-mult n (cdr base-values))))))
         (defun roman-oom-mult-helper (n oom-mult-alist)
           ;; 🤦 0 evaluates to t, so you need to check that n != 0
-          (print (format "n: %s\noom-mult-alist: %s" n oom-mult-alist))
-          (if (not (eq n 0))
+          ;; actually, it's better if you just look for n > 0 because otherwise
+          ;; your handling of 9s becomes more complicated
+          ;; (print (format "n: %s\noom-mult-alist: %s" n oom-mult-alist))
+          (if (> n 0)
               ;; 💡 maybe instead of handling 9s in get-largest-oom-mult, I can
               ;; do a sort of look-ahead here and handle it that way
               ;; 💡💡 better still: you could do a look behind, and if it's a
@@ -157,15 +159,14 @@ numeral. e.g.
              (cons (oom-mult-to-numeral-string oom-mult-elem) accumulator))
           (mapconcat #'identity (reverse accumulator) ""))))
     (rn-formatter-helper oom-mult-alist '()))
-  ;; (let ((simple (simple-roman-lookup value)))
-  ;;   ;; start using this pattern instead of
-  ;;   ;; (if foo
-  ;;   ;;     foo
-  ;;   ;;   else-action)
-  ;;   (or simple
-  ;;       (roman-numeral-alist-formatter (roman-oom-and-multiple-alist value))))
-  (roman-oom-and-multiple-alist value)
-  ))
+  ;; (roman-oom-and-multiple-alist value)
+  (let ((simple (simple-roman-lookup value)))
+    ;; start using this pattern instead of
+    ;; (if foo
+    ;;     foo
+    ;;   else-action)
+    (or simple
+        (roman-numeral-alist-formatter (roman-oom-and-multiple-alist value))))))
 
 ;; -- IELM testing --
 ;; ELISP> (get-largest-oom-mult 9 base-values)
@@ -232,6 +233,15 @@ numeral. e.g.
 ;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
 ;; Ohhh, I was looking for 0, so that makes sense
 
+;; ELISP> (to-roman 9)
+;; ((1 . 9))
+
+;; ELISP> (to-roman 90)
+;; ((10 . 9))
+
+;; ELISP> (to-roman 69)
+;; "LXIX"
+;; nice, finally!
 
 (provide 'roman-numerals)
 ;;; roman-numerals.el ends here
