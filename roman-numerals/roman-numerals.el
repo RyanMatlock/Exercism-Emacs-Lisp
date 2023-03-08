@@ -1,6 +1,13 @@
 ;;; roman-numerals.el --- roman-numerals Exercise (exercism)  -*- lexical-binding: t; -*-
 
-;;; Commentary:
+;;; Commentary: Idea: turn a number into an alist broken down as
+;;; ((roman-order-of-magnitude . multiple) ...) in descending order and then
+;;; pass that into a function to format it. "Multiple" is maybe an unfortunate
+;;; choice of names, but it speaks to the idea that for the number 3, the
+;;; "Roman order of magnitude" is 'I', which is repeated (i.e. multiplied if
+;;; you're thinking like a Pythonista) 3 times, in other words, 'III'. (I
+;;; suspect this is the sort of thing that won't even make sense to me in a
+;;; matter of weeks or months.)
 
 (defun to-roman (value)
   (let* ((roman-numeral-alist '((0 . "")
@@ -28,7 +35,8 @@ element and the elements of list (default: eq).
   (nth (position-in-list element list) list)
 
 should return element if element is in list."
-      ;; see https://emacs.stackexchange.com/a/14203
+      ;; see https://emacs.stackexchange.com/a/14203 for how to implement a
+      ;; default value
       (let ((test (or test #'eq)))
         (defun pos-in-list-helper (e lst pos)
           (let ((first (car lst)))
@@ -81,37 +89,20 @@ the form (OOM . multiple)"
           ((base-values (reverse roman-base-values)))
         (defun get-largest-oom-mult (n base-values)
           (let* ((oom (car base-values))
-                 ;; (next-smallest-oom (prev-roman-oom oom))
                  (quotient (/ n oom)))
-            ;; your issue with 9s is happening somewhere in here
+            ;; you could try to handle 9s in here, but I think it's easier to
+            ;; do in roman-oom-mult-helper
             (cond
-             ;; ((and
-             ;;   ;; convince yourself that these conditions may mean a 9
-             ;;   (eq quotient 1)
-             ;;   (5s-oom-p oom))
-             ;;  )
-             ;; ((and (5s-oom-p oom)
-             ;;       (eq 9 (/ n next-smallest-oom)))
-             ;;  (cons next-smallest-oom 9))
              ((> quotient 0) (cons oom quotient))
              (t (get-largest-oom-mult n (cdr base-values))))))
         (defun roman-oom-mult-helper (n oom-mult-alist)
           ;; 🤦 0 evaluates to t, so you need to check that n != 0
-          ;; actually, it's better if you just look for n > 0 because otherwise
-          ;; your handling of 9s becomes more complicated
-          ;; (print (format "n: %s\noom-mult-alist: %s" n oom-mult-alist))
-          ;; let's see if that fixes it
-          ;; ok, I'm taking too much away from n, so I really do need to do
-          ;; this the hard way
           (if (not (eq n 0))
               ;; 💡 maybe instead of handling 9s in get-largest-oom-mult, I can
               ;; do a sort of look-ahead here and handle it that way
               ;; 💡💡 better still: you could do a look behind, and if it's a
               ;; 9, take the cdr of the alist and cons (oom . 9) to it
               (let* ((prev-entry (car oom-mult-alist))
-                     ;; (reduced-oom-mult-alist (if prev-entry
-                     ;;                             (cdr oom-mult-alist)
-                     ;;                           '()))
                      (oom-mult-entry (get-largest-oom-mult n base-values))
                      (oom (car oom-mult-entry))
                      (mult (cdr oom-mult-entry))
@@ -166,7 +157,6 @@ numeral. e.g.
              (cons (oom-mult-to-numeral-string oom-mult-elem) accumulator))
           (mapconcat #'identity (reverse accumulator) ""))))
     (rn-formatter-helper oom-mult-alist '()))
-  ;; (roman-oom-and-multiple-alist value)
   (let ((simple (simple-roman-lookup value)))
     ;; start using this pattern instead of
     ;; (if foo
@@ -174,100 +164,6 @@ numeral. e.g.
     ;;   else-action)
     (or simple
         (roman-numeral-alist-formatter (roman-oom-and-multiple-alist value))))))
-
-;; -- IELM testing --
-;; ELISP> (get-largest-oom-mult 9 base-values)
-;; (1 . 9)
-;; ELISP> (to-roman 19)
-;; ((10 . 1)
-;;  (5 . 1)
-;;  (1 . 4))
-;; that's confusing
-
-;; ELISP> (get-largest-oom-mult 90 base-values)
-;; (50 . 1)
-;; ELISP> (5s-oom-p 50)
-;; t
-;; very confusing
-
-;; ELISP> (to-roman 9)
-;; ((5 . 1)
-;;  (1 . 4))
-;; still not working 🤔
-
-;; ELISP> (to-roman 9)
-;; ((5 . 1)
-;;  (1 . 4))
-
-;; ELISP> (to-roman 90)
-;; ((50 . 1)
-;;  (10 . 4)
-
-;; so 9s always take the form of ((5s-oom . 1) ((prev-oom 5s-oom) . 4)), so if
-;; I just look for that pattern, I should be able to turn it into
-;; ((prev-oom 5s-oom) . 9), which is what the formatter is expecting
-
-;; ELISP> (to-roman 9)
-
-;; "oom: 5
-;; mult: 1"
-
-;; "oom: 1
-;; mult: 4"
-
-;; "9er detected"
-
-;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
-
-;; ok, now that the typo is fixed, we're making progress
-
-;; ELISP> (roman-oom-mult-helper 0 (cons (cons 1 9) '()))
-;; ((1 . 9))
-;; ELISP> (roman-oom-mult-helper 0 (cons (cons 1 '9) '()))
-;; ((1 . 9))
-
-;; ELISP> (to-roman 9)
-
-;; "n: 9
-;; oom-mult-alist: nil"
-
-;; "n: 4
-;; oom-mult-alist: ((5 . 1))"
-
-;; "n: -5
-;; oom-mult-alist: ((1 . 9))"
-
-;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
-;; Ohhh, I was looking for 0, so that makes sense
-
-;; ELISP> (to-roman 9)
-;; ((1 . 9))
-
-;; ELISP> (to-roman 90)
-;; ((10 . 9))
-
-;; ELISP> (to-roman 69)
-;; "LXIX"
-;; nice, finally!
-
-;; ELISP> (to-roman 99)
-;; "XC"
-;; ELISP> (to-roman 93)
-;; "XC"
-
-;; ELISP> (to-roman 4)
-;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
-;; ELISP> (to-roman 49)
-;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
-;; ELISP> (to-roman 59)
-;; "LIX"
-;; I think I see the problem: I also need to check that prev-entry is not nil
-
-;; ELISP> (5s-oom-p '())
-;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
-;; ELISP> (5s-oom-p (car '()))
-;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
-;; yeah, that's where my error is coming from I think
 
 (provide 'roman-numerals)
 ;;; roman-numerals.el ends here
