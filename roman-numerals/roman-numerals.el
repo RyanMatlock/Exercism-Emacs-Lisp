@@ -81,7 +81,7 @@ the form (OOM . multiple)"
           ((base-values (reverse roman-base-values)))
         (defun get-largest-oom-mult (n base-values)
           (let* ((oom (car base-values))
-                 (next-smallest-oom (prev-roman-oom oom))
+                 ;; (next-smallest-oom (prev-roman-oom oom))
                  (quotient (/ n oom)))
             ;; your issue with 9s is happening somewhere in here
             (cond
@@ -90,25 +90,42 @@ the form (OOM . multiple)"
              ;;   (eq quotient 1)
              ;;   (5s-oom-p oom))
              ;;  )
-             ((and (5s-oom-p oom)
-                   (eq 9 (/ n next-smallest-oom)))
-              (cons next-smallest-oom 9))
+             ;; ((and (5s-oom-p oom)
+             ;;       (eq 9 (/ n next-smallest-oom)))
+             ;;  (cons next-smallest-oom 9))
              ((> quotient 0) (cons oom quotient))
              (t (get-largest-oom-mult n (cdr base-values))))))
         (defun roman-oom-mult-helper (n oom-mult-alist)
           ;; 🤦 0 evaluates to t, so you need to check that n != 0
+          (print (format "n: %s\noom-mult-alist: %s" n oom-mult-alist))
           (if (not (eq n 0))
               ;; 💡 maybe instead of handling 9s in get-largest-oom-mult, I can
               ;; do a sort of look-ahead here and handle it that way
               ;; 💡💡 better still: you could do a look behind, and if it's a
               ;; 9, take the cdr of the alist and cons (oom . 9) to it
-              (let* ((oom-mult-entry (get-largest-oom-mult n base-values))
+              (let* ((prev-entry (car oom-mult-alist))
+                     ;; (reduced-oom-mult-alist (if prev-entry
+                     ;;                             (cdr oom-mult-alist)
+                     ;;                           '()))
+                     (oom-mult-entry (get-largest-oom-mult n base-values))
                      (oom (car oom-mult-entry))
                      (mult (cdr oom-mult-entry))
                      (n-reduced (- n (* oom mult))))
-                (roman-oom-mult-helper
-                 n-reduced
-                 (cons oom-mult-entry oom-mult-alist)))
+                (if
+                    ;; only true for 9s
+                    (and (eq mult 4)
+                         (5s-oom-p (car prev-entry)))
+                    ;; then subtract 9 * oom from n and cons (oom . 9) onto
+                    ;; the cdr of oom-mult-alist to erase the (5s-oom . 1)
+                    ;; (roman-oom-mult-helper (- n (* oom 9))
+                    ;;                        (cons (cons oom 9)
+                    ;;                              (cdr oom-mult-alist)))
+                    (roman-oom-mult-helper (- n (* oom 9))
+                                           (cons (cons oom 9)
+                                                 (cdr oom-mult-alist)))
+                  (roman-oom-mult-helper
+                   n-reduced
+                   (cons oom-mult-entry oom-mult-alist))))
             (reverse oom-mult-alist)))
         (roman-oom-mult-helper n '())))
   (defun roman-numeral-alist-formatter (oom-mult-alist)
@@ -181,6 +198,40 @@ numeral. e.g.
 ;; so 9s always take the form of ((5s-oom . 1) ((prev-oom 5s-oom) . 4)), so if
 ;; I just look for that pattern, I should be able to turn it into
 ;; ((prev-oom 5s-oom) . 9), which is what the formatter is expecting
+
+;; ELISP> (to-roman 9)
+
+;; "oom: 5
+;; mult: 1"
+
+;; "oom: 1
+;; mult: 4"
+
+;; "9er detected"
+
+;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
+
+;; ok, now that the typo is fixed, we're making progress
+
+;; ELISP> (roman-oom-mult-helper 0 (cons (cons 1 9) '()))
+;; ((1 . 9))
+;; ELISP> (roman-oom-mult-helper 0 (cons (cons 1 '9) '()))
+;; ((1 . 9))
+
+;; ELISP> (to-roman 9)
+
+;; "n: 9
+;; oom-mult-alist: nil"
+
+;; "n: 4
+;; oom-mult-alist: ((5 . 1))"
+
+;; "n: -5
+;; oom-mult-alist: ((1 . 9))"
+
+;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
+;; Ohhh, I was looking for 0, so that makes sense
+
 
 (provide 'roman-numerals)
 ;;; roman-numerals.el ends here
