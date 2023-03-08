@@ -118,7 +118,8 @@ the form (OOM . multiple)"
                      (n-reduced (- n (* oom mult))))
                 (if
                     ;; only true for 9s
-                    (and (eq mult 4)
+                    (and prev-entry
+                         (eq mult 4)
                          (5s-oom-p (car prev-entry)))
                     ;; then subtract 9 * oom from n and cons (oom . 9) onto
                     ;; the cdr of oom-mult-alist to erase the (5s-oom . 1)
@@ -253,6 +254,20 @@ numeral. e.g.
 ;; "XC"
 ;; ELISP> (to-roman 93)
 ;; "XC"
+
+;; ELISP> (to-roman 4)
+;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
+;; ELISP> (to-roman 49)
+;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
+;; ELISP> (to-roman 59)
+;; "LIX"
+;; I think I see the problem: I also need to check that prev-entry is not nil
+
+;; ELISP> (5s-oom-p '())
+;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
+;; ELISP> (5s-oom-p (car '()))
+;; *** Eval error ***  Wrong type argument: number-or-marker-p, nil
+;; yeah, that's where my error is coming from I think
 
 (provide 'roman-numerals)
 ;;; roman-numerals.el ends here
