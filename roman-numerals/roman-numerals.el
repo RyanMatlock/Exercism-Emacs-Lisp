@@ -100,7 +100,10 @@ the form (OOM . multiple)"
           ;; actually, it's better if you just look for n > 0 because otherwise
           ;; your handling of 9s becomes more complicated
           ;; (print (format "n: %s\noom-mult-alist: %s" n oom-mult-alist))
-          (if (> n 0)
+          ;; let's see if that fixes it
+          ;; ok, I'm taking too much away from n, so I really do need to do
+          ;; this the hard way
+          (if (not (eq n 0))
               ;; 💡 maybe instead of handling 9s in get-largest-oom-mult, I can
               ;; do a sort of look-ahead here and handle it that way
               ;; 💡💡 better still: you could do a look behind, and if it's a
@@ -122,7 +125,10 @@ the form (OOM . multiple)"
                     ;; (roman-oom-mult-helper (- n (* oom 9))
                     ;;                        (cons (cons oom 9)
                     ;;                              (cdr oom-mult-alist)))
-                    (roman-oom-mult-helper (- n (* oom 9))
+                    ;; I need to add 5 back to n that was previously subtracted
+                    ;; and since that's (5s-oom . 1), I can just use the car of
+                    ;; prev-entry
+                    (roman-oom-mult-helper (+ (- n (* oom 9)) (car prev-entry))
                                            (cons (cons oom 9)
                                                  (cdr oom-mult-alist)))
                   (roman-oom-mult-helper
@@ -242,6 +248,11 @@ numeral. e.g.
 ;; ELISP> (to-roman 69)
 ;; "LXIX"
 ;; nice, finally!
+
+;; ELISP> (to-roman 99)
+;; "XC"
+;; ELISP> (to-roman 93)
+;; "XC"
 
 (provide 'roman-numerals)
 ;;; roman-numerals.el ends here
