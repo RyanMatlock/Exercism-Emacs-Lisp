@@ -22,6 +22,17 @@ error if trying to take a sublist that's too long.
             (reverse result))))
       (slice-helper xs start size '())))
 
+  (defun longer-list (xs ys)
+    "Determine the longer list.
+(length xs) > (length ys) => :first
+(length xs) < (length ys) => :second
+(length xs) == (length ys) => :equal"
+    (let ((lx (length xs))
+          (ly (length ys)))
+      (cond ((> lx ly) :first)
+            ((< lx ly) :second)
+            (t :equal))))
+
   (defun compare-equal-length-lists (xs ys)
     "Determine if lists of equal length have identical elements in the same
 order, in which case they're :equal; otherwise, return :unequal."
@@ -78,6 +89,23 @@ order, in which case they're :equal; otherwise, return :unequal."
 ;; ELISP> (slice '(1 2 3 4 5) 0 5)
 ;; (1 2 3 4 5)
 ;; fixed
+
+;; ELISP> (longer-list '(1 2 3) '(1 2 3 4))
+;; :second
+;; ELISP> (longer-list '(1 2 3) '())
+;; :first
+;; ELISP> (longer-list '(1 2 3) '(3 2 1))
+;; :equal
+
+;; ELISP> (equal :first :first)
+;; t
+;; ELISP> (eq :first :first)
+;; t
+;; ELISP> (eq :first :second)
+;; nil
+;; ELISP> (equal :first :second)
+;; nil
+;; ok, that works as expected
 
 (provide 'sublist)
 ;;; sublist.el ends here
