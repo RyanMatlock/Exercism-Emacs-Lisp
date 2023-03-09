@@ -22,7 +22,11 @@ order, in which case they're :equal; otherwise, return :unequal."
                      (t :equal)))))
           (t (error "Lists are of unequal length.")))
     (compare-equal-length-lists-helper xs ys))
-  (compare-equal-length-lists list1 list2))
+  (cond ((and (not list1) list2) :sublist)
+        ((and list1 (not list2)) :superlist)
+        ((eq (length list1) (length list2))
+         (compare-equal-length-lists list1 list2))
+        (t (error "Not implemented."))))
 
 ;; -- IELM testing --
 ;; ELISP> (compare-equal-length-lists '("foo" "bar") '("bar" "foo"))
