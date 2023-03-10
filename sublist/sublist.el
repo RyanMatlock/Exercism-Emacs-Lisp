@@ -18,12 +18,11 @@ error if trying to take a sublist that's too long.
         ((< size 0)
          (error "0 <= size < (- (length xs) start)."))
         (t
-         (defun slice-helper (xs start size result)
-           (let ((x (nth start xs)))
-             (if (> size 0)
-                 (slice-helper xs (1+ start) (1- size) (cons x result))
-               (reverse result))))
-         (slice-helper xs start size '()))))
+         (defun slice-helper (xs start)
+           (if (> start 0)
+               (slice-helper (cdr xs) (1- start))
+             xs))
+         (seq-take (slice-helper xs start) size))))
 
 (defun longer-list (xs ys)
   "Determine the longer list.
@@ -142,6 +141,11 @@ order, in which case they're :equal; otherwise, return :unequal."
 ;;  (:bar . 2)
 ;;  (:baz . 3))
 ;; looks like I'll probably be able to make my code a lot shorter
+
+;; ELISP> (defun any (bools) (seq-reduce #'(lambda (x y) (or x y)) bools nil))
+;; any
+;; ELISP> (any '(nil nil t))
+;; t
 
 (provide 'sublist)
 ;;; sublist.el ends here
