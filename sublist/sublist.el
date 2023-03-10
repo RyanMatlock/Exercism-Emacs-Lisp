@@ -11,29 +11,34 @@
 error if trying to take a sublist that's too long.
 
 (slice xs 0 (length xs)) should return xs."
-  (if (< (- (length xs) start) size)
-      (error "Slice is too large.")
-    (defun slice-helper (xs start size result)
-      (let ((x (nth start xs)))
-        (if (> size 0)
-            (slice-helper xs (1+ start) (1- size) (cons x result))
-          (reverse result))))
-    (slice-helper xs start size '())))
+  (cond ((< (- (length xs) start) size)
+         (error "Slice is too large."))
+        ((< start 0)
+         (error "0 <= start < (length xs)."))
+        ((< size 0)
+         (error "0 <= size < (- (length xs) start)."))
+        (t
+         (defun slice-helper (xs start size result)
+           (let ((x (nth start xs)))
+             (if (> size 0)
+                 (slice-helper xs (1+ start) (1- size) (cons x result))
+               (reverse result))))
+         (slice-helper xs start size '()))))
+
+(defun longer-list (xs ys)
+  "Determine the longer list.
+(length xs) > (length ys) => :first
+(length xs) < (length ys) => :second
+(length xs) == (length ys) => :equal"
+  (let ((lx (length xs))
+        (ly (length ys)))
+    (cond ((> lx ly) :first)
+          ((< lx ly) :second)
+          (t :equal))))
 
 (defun list-classify (list1 list2)
   "Determine if list1 is equal to, a sublist of, a superlist of, or unequal to
 list2."
-
-  (defun longer-list (xs ys)
-    "Determine the longer list.
-(length xs) > (length ys) => :first
-(length xs) < (length ys) => :second
-(length xs) == (length ys) => :equal"
-    (let ((lx (length xs))
-          (ly (length ys)))
-      (cond ((> lx ly) :first)
-            ((< lx ly) :second)
-            (t :equal))))
 
   (defun compare-equal-length-lists (xs ys)
     "Determine if lists of equal length have identical elements in the same
