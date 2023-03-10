@@ -1,26 +1,28 @@
 ;;; sublist.el --- Sublist (exercism)  -*- lexical-binding: t; -*-
 
-;;; Commentary:
+;;; Commentary: I've pulled out helper functions from the scope of
+;;; list-classify in order to run my own ERT tests on them. This seems like a
+;;; good habit to get into.
 
 ;;; Code:
+
+(defun slice (xs start size)
+  "Create a sublist of xs beginning at index start of length size. Throw an
+error if trying to take a sublist that's too long.
+
+(slice xs 0 (length xs)) should return xs."
+  (if (< (- (length xs) start) size)
+      (error "Slice is too large.")
+    (defun slice-helper (xs start size result)
+      (let ((x (nth start xs)))
+        (if (> size 0)
+            (slice-helper xs (1+ start) (1- size) (cons x result))
+          (reverse result))))
+    (slice-helper xs start size '())))
 
 (defun list-classify (list1 list2)
   "Determine if list1 is equal to, a sublist of, a superlist of, or unequal to
 list2."
-
-  (defun slice (xs start size)
-    "Create a sublist of xs beginning at index start of length size. Throw an
-error if trying to take a sublist that's too long.
-
-(slice xs 0 (length xs)) should return xs."
-    (if (< (- (length xs) start) size)
-        (error "Slice is too large.")
-      (defun slice-helper (xs start size result)
-        (let ((x (nth start xs)))
-          (if (> size 0)
-              (slice-helper xs (1+ start) (1- size) (cons x result))
-            (reverse result))))
-      (slice-helper xs start size '())))
 
   (defun longer-list (xs ys)
     "Determine the longer list.
