@@ -114,5 +114,34 @@ order, in which case they're :equal; otherwise, return :unequal."
 ;; nil
 ;; ok, that works as expected
 
+;; ELISP> (mapcar #'(lambda (x y) (eq x y)) '(1 2 3) '(3 2 1))
+;; *** Eval error ***  Wrong number of arguments: mapcar, 3
+;; ELISP> (seq-mapn #'(lambda (x y) (eq x y)) '(1 2 3) '(3 2 1))
+;; (nil t nil)
+
+;; ELISP> (seq-reduce #'and (seq-mapn #'(lambda (x y) (eq x y)) '(1 2 3) '(3 2 1))
+;; t)
+;; *** Eval error ***  Invalid function: #<subr and>
+;; ELISP> (seq-reduce 'and '(t t nil) t)
+;; *** Eval error ***  Invalid function: #<subr and>
+;; ELISP> (seq-reduce #'(lambda (x y) (and x y)) '(t t nil) t)
+;; nil
+;; ELISP> (seq-reduce #'(lambda (x y) (and x y)) '(t t t) t)
+;; t
+;; ELISP> (functionp 'and)
+;; nil
+;; ELISP> (functionp 'length)
+;; t
+;; see
+;; https://emacs.stackexchange.com/questions/16332/and-is-an-invalid-function
+;; well, that's weird about #'and, but it's good to know, and it's really good
+;; to know about seq-mapn for essentially being able to zip lists
+
+;; ELISP> (seq-mapn #'(lambda (x y) (cons x y)) '(:foo :bar :baz) '(1 2 3 4))
+;; ((:foo . 1)
+;;  (:bar . 2)
+;;  (:baz . 3))
+;; looks like I'll probably be able to make my code a lot shorter
+
 (provide 'sublist)
 ;;; sublist.el ends here
