@@ -18,6 +18,8 @@ error if trying to take a sublist that's too long.
         ((< size 0)
          (error "0 <= size < (- (length xs) start)."))
         (t
+         ;; use seq-subseq instead; see
+         ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Sequence-Functions.html
          (defun slice-helper (xs start)
            (if (> start 0)
                (slice-helper (cdr xs) (1- start))
