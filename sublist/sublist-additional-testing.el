@@ -40,5 +40,11 @@
 (ert-deftest empty-lists-equal ()
   (should (equal :equal (longer-list '() '()))))
 
+(ert-deftest non-empty-list-first-is-longer-than-empty-list ()
+  (should (equal :first (longer-list '(:foo) '()))))
+
+(ert-deftest non-empty-list-second-is-longer-than-empty-list ()
+  (should (equal :second (longer-list '() '(:foo)))))
+
 (provide 'sublist-additional-testing)
 ;;; sublist-additional-testing.el ends here
