@@ -1,8 +1,9 @@
 ;;; sublist.el --- Sublist (exercism)  -*- lexical-binding: t; -*-
 
 ;;; Commentary: I've pulled out helper functions from the scope of
-;;; list-classify in order to run my own ERT tests on them. This seems like a
-;;; good habit to get into.
+;;; list-classify in order to run my own ERT tests on them. Testing is a good
+;;; habit to get into, but in general I wouldn't want to pollute my namespace
+;;; like this.
 
 ;;; Code:
 
