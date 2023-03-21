@@ -54,5 +54,8 @@
   (ert-deftest non-empty-lists-first-longer ()
     (should (equal :second (longer-list shorter longer)))))
 
+(ert-deftest lists-of-same-length-equal ()
+  (should (equal :equal (longer-list '(:foo :bar :baz) '(1 2 3)))))
+
 (provide 'sublist-additional-testing)
 ;;; sublist-additional-testing.el ends here
