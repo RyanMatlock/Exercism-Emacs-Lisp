@@ -8,16 +8,16 @@
 ;;; Code:
 
 (defun slice (xs start size)
-  "Create a sublist of xs beginning at index start of length size. Throw an
+  "Create a sublist of XS beginning at index START of length SIZE. Throw an
 error if trying to take a sublist that's too long.
 
-(slice xs 0 (length xs)) should return xs."
+(slice XS 0 (length XS)) should return XS."
   (cond ((< (- (length xs) start) size)
          (error "Slice is too large."))
         ((< start 0)
-         (error "0 <= start < (length xs)."))
+         (error "0 <= start < (length XS)."))
         ((< size 0)
-         (error "0 <= size < (- (length xs) start)."))
+         (error "0 <= size < (- (length XS) start)."))
         (t
          ;; use seq-subseq instead; see
          ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Sequence-Functions.html
@@ -30,9 +30,9 @@ error if trying to take a sublist that's too long.
 
 (defun longer-list (xs ys)
   "Determine the longer list.
-(length xs) > (length ys) => :first
-(length xs) < (length ys) => :second
-(length xs) == (length ys) => :equal"
+(length XS) > (length YS) => :first
+(length XS) < (length YS) => :second
+(length XS) == (length YS) => :equal"
   (let ((lx (length xs))
         (ly (length ys)))
     (cond ((> lx ly) :first)
@@ -40,8 +40,8 @@ error if trying to take a sublist that's too long.
           (t :equal))))
 
 (defun list-classify (list1 list2)
-  "Determine if list1 is equal to, a sublist of, a superlist of, or unequal to
-list2."
+  "Determine if LIST1 is equal to, a sublist of, a superlist of, or unequal to
+LIST2."
 
   (defun compare-equal-length-lists (xs ys)
     "Determine if lists of equal length have identical elements in the same
