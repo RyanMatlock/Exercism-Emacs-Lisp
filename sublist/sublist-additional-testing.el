@@ -37,5 +37,8 @@
 ;; --- longer-list testing ---
 (declare-function longer-list "sublist.el" (xs ys))
 
+(ert-deftest empty-lists-equal ()
+  (should (equal :equal (longer-list '() '()))))
+
 (provide 'sublist-additional-testing)
 ;;; sublist-additional-testing.el ends here
