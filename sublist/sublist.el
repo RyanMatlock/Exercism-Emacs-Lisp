@@ -21,11 +21,12 @@ error if trying to take a sublist that's too long.
         (t
          ;; use seq-subseq instead; see
          ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Sequence-Functions.html
-         (defun slice-helper (xs start)
-           (if (> start 0)
-               (slice-helper (cdr xs) (1- start))
-             xs))
-         (seq-take (slice-helper xs start) size))))
+         ;; (defun slice-helper (xs start)
+         ;;   (if (> start 0)
+         ;;       (slice-helper (cdr xs) (1- start))
+         ;;     xs))
+         ;; (seq-take (slice-helper xs start) size)
+         (seq-subseq xs start (+ start size)))))
 
 (defun longer-list (xs ys)
   "Determine the longer list.
