@@ -39,28 +39,30 @@ error if trying to take a sublist that's too long.
           ((< lx ly) :second)
           (t :equal))))
 
+(defun compare-equal-length-lists (xs ys)
+  "Determine if lists of equal length have identical elements in the same
+order, in which case they're :equal; otherwise, return :unequal."
+  (cond ((eq (length xs) (length ys))
+         ;; only reason I'm writing the helper function is so the length
+         ;; check only happens once (not that performance really matters
+         ;; here)
+         (defun compare-equal-length-lists-helper (xs ys)
+           (let ((x (car xs))
+                 (y (car ys)))
+             (cond ((and x y (eq x y))
+                    (compare-equal-length-lists-helper
+                     (cdr xs)
+                     (cdr ys)))
+                   ((not (eq x y)) :unequal)
+                   (t :equal)))))
+        (t (error "Lists are of unequal length.")))
+  (compare-equal-length-lists-helper xs ys))
+
 (defun list-classify (list1 list2)
   "Determine if LIST1 is equal to, a sublist of, a superlist of, or unequal to
 LIST2."
 
-  (defun compare-equal-length-lists (xs ys)
-    "Determine if lists of equal length have identical elements in the same
-order, in which case they're :equal; otherwise, return :unequal."
-    (cond ((eq (length xs) (length ys))
-           ;; only reason I'm writing the helper function is so the length
-           ;; check only happens once (not that performance really matters
-           ;; here)
-           (defun compare-equal-length-lists-helper (xs ys)
-             (let ((x (car xs))
-                   (y (car ys)))
-               (cond ((and x y (eq x y))
-                      (compare-equal-length-lists-helper
-                       (cdr xs)
-                       (cdr ys)))
-                     ((not (eq x y)) :unequal)
-                     (t :equal)))))
-          (t (error "Lists are of unequal length.")))
-    (compare-equal-length-lists-helper xs ys))
+
 
   (cond ((and (not list1) list2) :sublist)
         ((and list1 (not list2)) :superlist)
