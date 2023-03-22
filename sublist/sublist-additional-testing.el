@@ -37,7 +37,7 @@
 ;; --- longer-list testing ---
 (declare-function longer-list "sublist.el" (xs ys))
 
-(ert-deftest empty-lists-equal ()
+(ert-deftest ll-empty-lists-are-equal ()
   (should (equal :equal (longer-list '() '()))))
 
 (ert-deftest non-empty-list-first-is-longer-than-empty-list ()
@@ -56,6 +56,12 @@
 
 (ert-deftest lists-of-same-length-equal ()
   (should (equal :equal (longer-list '(:foo :bar :baz) '(1 2 3)))))
+
+;; --- compare-equal-length-lists testing ---
+(declare-function compare-equal-length-lists "sublist.el" (xs ys))
+
+(ert-deftest compeqlenl-empty-lists-are-equal ()
+  (should (equal :equal (compare-equal-length-lists '() '()))))
 
 (provide 'sublist-additional-testing)
 ;;; sublist-additional-testing.el ends here
