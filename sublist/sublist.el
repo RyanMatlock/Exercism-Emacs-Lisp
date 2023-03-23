@@ -159,5 +159,15 @@ LIST2."
 ;; ELISP> (any '(nil nil t))
 ;; t
 
+;; ELISP> (equal '(:foo :bar) '(:foo :bar))
+;; t
+;; ELISP> (equal '('(:foo) '(:bar)) '((quote (:foo)) (quote (:bar))))
+;; t
+;; ELISP> (equal '("foo" "bar") (quote ("foo" "bar")))
+;; t
+;; ELISP> (equal '("bar" "foo") (quote ("foo" "bar")))
+;; nil
+;; ok, so equal seems to be pretty smart
+
 (provide 'sublist)
 ;;; sublist.el ends here
