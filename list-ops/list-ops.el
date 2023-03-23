@@ -21,7 +21,12 @@
   (error "Delete this S-Expression and write your own implementation"))
 
 (defun list-length (list)
-  (error "Delete this S-Expression and write your own implementation"))
+  "Return the number of top-level elements in LIST."
+  (defun length-helper (list len)
+    (if list
+        (length-helper (cdr list) (1+ len))
+      len))
+  (length-helper list 0))
 
 (defun list-append (list1 list2)
   (error "Delete this S-Expression and write your own implementation"))
