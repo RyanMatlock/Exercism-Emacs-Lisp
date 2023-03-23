@@ -1,6 +1,12 @@
 ;;; sublist-additional-testing.el --- tests for helper functions for sublist (Exercism)  -*- lexical-binding: t; -*-
 
-;;; Commentary:
+;;; Commentary: This testing is probably more exhaustive than what I'd do in
+;;; real production code, especially because these are just helper functions,
+;;; and if list-classify passes its (hopefully exhaustive) test suite, it
+;;; doesn't matter how it's implemented, so the quality of its helper functions
+;;; are less critial. The purpose of this is to build some "muscle memory" for
+;;; working with ERT. One thing I've gotten from it so far: factoring out
+;;; reused arguments into lets seems like a good pattern.
 
 ;;; Code:
 
