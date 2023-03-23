@@ -97,5 +97,11 @@
 (ert-deftest empty-list-size-zero-no-error ()
   (should (equal '() (successive-sublists '() 0))))
 
+(ert-deftest successive-sublists-expected-behavior ()
+  (should (equal '('(:foo :bar)
+                   '(:bar :baz)
+                   '(:baz :qux))
+                 (successive-sublists '(:foo :bar :baz :qux) 2))))
+
 (provide 'sublist-additional-testing)
 ;;; sublist-additional-testing.el ends here
