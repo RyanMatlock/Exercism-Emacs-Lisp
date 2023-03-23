@@ -93,12 +93,23 @@ list of lists; e.g.
 (defun list-classify (list1 list2)
   "Determine if LIST1 is equal to, a sublist of, a superlist of, or unequal to
 LIST2."
-
-  (cond ((and (not list1) list2) :sublist)
-        ((and list1 (not list2)) :superlist)
-        ((eq (length list1) (length list2))
-         (compare-equal-length-lists list1 list2))
-        (t (error "Not implemented."))))
+  (defun compare-successive-sublists (shorter longer)
+    (mapcar #'(lambda (xs) (compare-equal-length-lists shorter xs))
+            (successive-sublists longer (length shorter))))
+  (let ((len1 (length list1))
+        (len2 (length list2)))
+    (cond ((and (not list1) list2) :sublist)
+          ((and list1 (not list2)) :superlist)
+          ((eq len1 len2)
+           (compare-equal-length-lists list1 list2))
+          ((> len1 len2)
+           (if (anyp :equal (compare-successive-sublists list2 list1))
+               :superlist
+             :unequal))
+          ((> len2 len1)
+           (if (anyp :equal (compare-successive-sublists list1 list2))
+               :sublist
+             :unequal)))))
 
 (provide 'sublist)
 ;;; sublist.el ends here
