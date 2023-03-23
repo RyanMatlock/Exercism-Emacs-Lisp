@@ -1,0 +1,15 @@
+#+title: Nucleotide Count IELM Testing
+
+* First thought: =seq-filter=
+
+#+begin_src emacs-lisp
+ELISP> (seq-filter ?A "GATTACA")
+*** Eval error ***  Invalid function: 65
+ELISP> (seq-filter (lambda (c) (eq ?A c)) "GATTACA")
+(65 65 65)
+
+ELISP> (length (seq-filter (lambda (c) (eq ?A c)) "GATTACA"))
+3 (#o3, #x3, ?\C-c)
+#+end_src
+
+That looks promising!
