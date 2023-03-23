@@ -64,7 +64,22 @@ list of lists; e.g.
 
 (successive-sublists '(:foo :bar :baz :qux) 2) ->
 ('(:foo :bar) '(:bar :baz) '(:baz :qux))"
-  )
+  (defun successive-sublists-helper (xs size start acc)
+    (if (< (- (length xs) start) size)
+        (reverse acc)
+      ;; (print (format "xs: %s\tsize: %d\tstart: %d\tacc: %s"
+      ;;                xs size start acc))
+      (successive-sublists-helper
+       xs
+       size
+       (1+ start)
+       (cons (slice xs start size) acc))))
+  (cond ((> size (length xs))
+         (error "SIZE must be ≤ (length XS)"))
+        ((and (equal size 0) (not xs)) '())
+        ((equal size 0)
+         (error "SIZE must be > 0 if XS is non-empty"))
+        (t (successive-sublists-helper xs size 0 '()))))
 
 (defun list-classify (list1 list2)
   "Determine if LIST1 is equal to, a sublist of, a superlist of, or unequal to
