@@ -2,11 +2,16 @@
 
 It's probably better to organize my IELM experiments into literate code blocks.
 
+* ~compare-equal-length-lists~ tests
+#+begin_src emacs-lisp
 ELISP> (compare-equal-length-lists '("foo" "bar") '("bar" "foo"))
 :unequal
 ELISP> (compare-equal-length-lists '(1 2 3) '(1 2 3))
 :equal
+#+end_src
 
+* ~slice~ tests
+#+begin_src emacs-lisp
 ELISP> (slice '(1 2 3 4 5) 1 3)
 (2 3 4)
 
@@ -15,12 +20,18 @@ ELISP> (slice '(1 2 3 4 5) 2 3)
 
 ELISP> (slice '(1 2 3 4 5) 1 5)
 (2 3 4 5 nil)
+#+end_src
+
 oops, going off the end
 
+#+begin_src emacs-lisp
 ELISP> (slice '(1 2 3 4 5) 1 6)
 (2 3 4 5 nil nil)
+#+end_src
+
 really going off the end!
 
+#+begin_src emacs-lisp
 ELISP> (slice '(1 2 3 4 5) 1 7)
 *** Eval error ***  Slice is too large.
 
@@ -31,15 +42,24 @@ ELISP> (slice '(1 2 3 4 5) 1 4)
 
 ELISP> (slice '(1 2 3 4 5) 0 5)
 (1 2 3 4 5)
+#+end_src
 fixed
 
+* ~longer-list~ testing
+
+#+begin_src emacs-lisp
 ELISP> (longer-list '(1 2 3) '(1 2 3 4))
 :second
 ELISP> (longer-list '(1 2 3) '())
 :first
 ELISP> (longer-list '(1 2 3) '(3 2 1))
 :equal
+#+end_src
 
+* Ensuring I know how Emacs Lisp keywords work
+see [[https://stackoverflow.com/a/25921867][What is the colon (:) in Emacs lisp? | stackoverflow]]
+
+#+begin_src emacs-lisp
 ELISP> (equal :first :first)
 t
 ELISP> (eq :first :first)
@@ -48,8 +68,13 @@ ELISP> (eq :first :second)
 nil
 ELISP> (equal :first :second)
 nil
+#+end_src
+
 ok, that works as expected
 
+* Demonstrating I don't understand how to zip lists
+
+#+begin_src emacs-lisp
 ELISP> (mapcar #'(lambda (x y) (eq x y)) '(1 2 3) '(3 2 1))
 *** Eval error ***  Wrong number of arguments: mapcar, 3
 ELISP> (seq-mapn #'(lambda (x y) (eq x y)) '(1 2 3) '(3 2 1))
@@ -93,3 +118,54 @@ t
 ELISP> (equal '("bar" "foo") (quote ("foo" "bar")))
 nil
 ok, so equal seems to be pretty smart
+
+#+end_src
+
+* Failing ~successive-sublists-expected-behavior~
+
+#+begin_example
+F successive-sublists-expected-behavior
+    (error "Slice is too large.")
+#+end_example
+
+Current state of ~successive-sublists~:
+
+#+begin_src emacs-lisp
+  (defun successive-sublists (xs size)
+    "Break XS into as many sublists of length SIZE as possible and return as a
+  list of lists; e.g.
+
+  (successive-sublists '(:foo :bar :baz :qux) 2) ->
+  ('(:foo :bar) '(:bar :baz) '(:baz :qux))"
+    (defun successive-sublists-helper (xs size start acc)
+      (if (> (- size start) (length xs))
+          (reverse acc)
+        (print (format "xs: %s\tsize: %d\tstart: %d\tacc: %s"
+                       xs size start acc))
+        (successive-sublists-helper
+         xs
+         size
+         (1+ start)
+         (cons (slice xs start size) acc))))
+    (cond ((> size (length xs))
+           (error "SIZE must be ≤ (length XS)"))
+          ((and (equal size 0) (not xs)) '())
+          ((equal size 0)
+           (error "SIZE must be > 0 if XS is non-empty"))
+          (t (successive-sublists-helper xs size 0 '()))))
+#+end_src
+
+#+begin_src emacs-lisp
+ELISP> (successive-sublists '(:foo :bar :baz) 2)
+
+"xs: (:foo :bar :baz)   size: 2 start: 0    acc: nil"
+
+"xs: (:foo :bar :baz)   size: 2 start: 1    acc: ((:foo :bar))"
+
+"xs: (:foo :bar :baz)   size: 2 start: 2    acc: ((:bar :baz) (:foo :bar))"
+
+*** Eval error ***  Slice is too large.
+#+end_src
+
+Ah, I just need to check that the difference between size and start is less
+than or equal to size.
