@@ -85,5 +85,17 @@
   (let ((lst '(:foo :bar :baz)))
     (should (equal :equal (compare-equal-length-lists lst lst)))))
 
+;; --- successive-sublists testing ---
+(declare-function successive-sublists "sublist.el" (xs size))
+
+(ert-deftest size-greater-than-list-length-error ()
+  (should-error (successive-sublists '(:foo :bar) 3)))
+
+(ert-deftest non-empty-list-size-zero-error ()
+  (should-error (successive-sublists '(:foo :bar) 0)))
+
+(ert-deftest empty-list-size-zero-no-error ()
+  (should (equal '() (successive-sublists '() 0))))
+
 (provide 'sublist-additional-testing)
 ;;; sublist-additional-testing.el ends here
