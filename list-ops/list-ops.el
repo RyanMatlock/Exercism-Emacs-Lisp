@@ -24,7 +24,12 @@
   (error "Delete this S-Expression and write your own implementation"))
 
 (defun list-reverse (list)
-  (error "Delete this S-Expression and write your own implementation"))
+  "Reverse the elements of LIST."
+  (defun reverse-helper (list acc)
+    (if list
+        (reverse-helper (cdr list) (cons (car list) acc))
+      acc))
+  (reverse-helper list '()))
 
 (defun list-concatenate (list1 list2 &rest LISTS)
   (error "Delete this S-Expression and write your own implementation"))
