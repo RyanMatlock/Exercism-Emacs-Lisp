@@ -12,7 +12,10 @@
   (error "Delete this S-Expression and write your own implementation"))
 
 (defun list-empty-p (list)
-  (error "Delete this S-Expression and write your own implementation"))
+  "Return T if LIST is empty; otherwise return NIL."
+  (if list
+      nil
+    t))
 
 (defun list-sum (list)
   (error "Delete this S-Expression and write your own implementation"))
