@@ -326,3 +326,42 @@ Oh, duh, I wasn't checking the =car= of =xs= :facepalm:
 
 :facepalm::facepalm: This is very similar to the behavior of =member=.
 
+* =compare-successive-sublists= debugging
+
+#+begin_src emacs-lisp
+  (defun compare-successive-sublists (shorter longer)
+    (mapcar #'(lambda (xs) (compare-equal-length-lists shorter xs))
+            (successive-sublists longer)))
+#+end_src
+
+producing the following output:
+
+#+begin_src emacs-lisp
+ELISP> (compare-successive-sublists '(:baz :qux) '(:foo :bar :baz :qux))
+*** Eval error ***  Wrong number of arguments: ((t) (xs size) "Break XS into as many sublists of length SIZE as possible and return as a
+list of lists; e.g.
+
+(successive-sublists '(:foo :bar :baz :qux) 2) ->
+('(:foo :bar) '(:bar :baz) '(:baz :qux))" (defalias 'successive-sublists-helper
+#'(lambda (xs size start acc) (if (< (- (length xs) start) size) (reverse acc)
+(successive-sublists-helper xs size (1+ start) (cons (slice xs start size)
+acc))))) (cond ((> size (length xs)) (error "SIZE must be ≤ (length XS)"))
+((and (equal size 0) (not xs)) 'nil) ((equal size 0) (error "SIZE must be > 0
+if XS is non-empty")) (t (successive-sublists-helper xs size 0 'nil)))), 1
+#+end_src
+
+Issue is that I need to call =successive-sublists= with a size, that size being
+the length of the shorter list.
+
+#+begin_src emacs-lisp
+  (defun compare-successive-sublists (shorter longer)
+    (mapcar #'(lambda (xs) (compare-equal-length-lists shorter xs))
+            (successive-sublists longer (length shorter))))
+#+end_src
+
+New result:
+
+#+begin_src emacs-lisp
+ELISP> (compare-successive-sublists '(:baz :qux) '(:foo :bar :baz :qux))
+(:unequal :unequal :equal)
+#+end_src
