@@ -1,0 +1,367 @@
+#+title: Sublist IELM testing results
+
+It's probably better to organize my IELM experiments into literate code blocks.
+
+* ~compare-equal-length-lists~ tests
+#+begin_src emacs-lisp
+ELISP> (compare-equal-length-lists '("foo" "bar") '("bar" "foo"))
+:unequal
+ELISP> (compare-equal-length-lists '(1 2 3) '(1 2 3))
+:equal
+#+end_src
+
+* ~slice~ tests
+#+begin_src emacs-lisp
+ELISP> (slice '(1 2 3 4 5) 1 3)
+(2 3 4)
+
+ELISP> (slice '(1 2 3 4 5) 2 3)
+(3 4 5)
+
+ELISP> (slice '(1 2 3 4 5) 1 5)
+(2 3 4 5 nil)
+#+end_src
+
+oops, going off the end
+
+#+begin_src emacs-lisp
+ELISP> (slice '(1 2 3 4 5) 1 6)
+(2 3 4 5 nil nil)
+#+end_src
+
+really going off the end!
+
+#+begin_src emacs-lisp
+ELISP> (slice '(1 2 3 4 5) 1 7)
+*** Eval error ***  Slice is too large.
+
+ELISP> (slice '(1 2 3 4 5) 1 5)
+*** Eval error ***  Slice is too large.
+ELISP> (slice '(1 2 3 4 5) 1 4)
+(2 3 4 5)
+
+ELISP> (slice '(1 2 3 4 5) 0 5)
+(1 2 3 4 5)
+#+end_src
+fixed
+
+* ~longer-list~ testing
+
+#+begin_src emacs-lisp
+ELISP> (longer-list '(1 2 3) '(1 2 3 4))
+:second
+ELISP> (longer-list '(1 2 3) '())
+:first
+ELISP> (longer-list '(1 2 3) '(3 2 1))
+:equal
+#+end_src
+
+* Ensuring I know how Emacs Lisp keywords work
+see [[https://stackoverflow.com/a/25921867][What is the colon (:) in Emacs lisp? | stackoverflow]]
+
+#+begin_src emacs-lisp
+ELISP> (equal :first :first)
+t
+ELISP> (eq :first :first)
+t
+ELISP> (eq :first :second)
+nil
+ELISP> (equal :first :second)
+nil
+#+end_src
+
+ok, that works as expected
+
+* Demonstrating I don't understand how to zip lists
+
+#+begin_src emacs-lisp
+ELISP> (mapcar #'(lambda (x y) (eq x y)) '(1 2 3) '(3 2 1))
+*** Eval error ***  Wrong number of arguments: mapcar, 3
+ELISP> (seq-mapn #'(lambda (x y) (eq x y)) '(1 2 3) '(3 2 1))
+(nil t nil)
+
+ELISP> (seq-reduce #'and (seq-mapn #'(lambda (x y) (eq x y)) '(1 2 3) '(3 2 1))
+t)
+*** Eval error ***  Invalid function: #<subr and>
+ELISP> (seq-reduce 'and '(t t nil) t)
+*** Eval error ***  Invalid function: #<subr and>
+ELISP> (seq-reduce #'(lambda (x y) (and x y)) '(t t nil) t)
+nil
+ELISP> (seq-reduce #'(lambda (x y) (and x y)) '(t t t) t)
+t
+ELISP> (functionp 'and)
+nil
+ELISP> (functionp 'length)
+t
+see
+https://emacs.stackexchange.com/questions/16332/and-is-an-invalid-function
+well, that's weird about #'and, but it's good to know, and it's really good
+to know about seq-mapn for essentially being able to zip lists
+
+ELISP> (seq-mapn #'(lambda (x y) (cons x y)) '(:foo :bar :baz) '(1 2 3 4))
+((:foo . 1)
+ (:bar . 2)
+ (:baz . 3))
+looks like I'll probably be able to make my code a lot shorter
+
+ELISP> (defun any (bools) (seq-reduce #'(lambda (x y) (or x y)) bools nil))
+any
+ELISP> (any '(nil nil t))
+t
+
+ELISP> (equal '(:foo :bar) '(:foo :bar))
+t
+ELISP> (equal '('(:foo) '(:bar)) '((quote (:foo)) (quote (:bar))))
+t
+ELISP> (equal '("foo" "bar") (quote ("foo" "bar")))
+t
+ELISP> (equal '("bar" "foo") (quote ("foo" "bar")))
+nil
+ok, so equal seems to be pretty smart
+
+#+end_src
+
+* Failing ~successive-sublists-expected-behavior~
+
+#+begin_example
+F successive-sublists-expected-behavior
+    (error "Slice is too large.")
+#+end_example
+
+Current state of ~successive-sublists~:
+
+#+begin_src emacs-lisp
+  (defun successive-sublists (xs size)
+    "Break XS into as many sublists of length SIZE as possible and return as a
+  list of lists; e.g.
+
+  (successive-sublists '(:foo :bar :baz :qux) 2) ->
+  ('(:foo :bar) '(:bar :baz) '(:baz :qux))"
+    (defun successive-sublists-helper (xs size start acc)
+      (if (> (- size start) (length xs))
+          (reverse acc)
+        (print (format "xs: %s\tsize: %d\tstart: %d\tacc: %s"
+                       xs size start acc))
+        (successive-sublists-helper
+         xs
+         size
+         (1+ start)
+         (cons (slice xs start size) acc))))
+    (cond ((> size (length xs))
+           (error "SIZE must be ≤ (length XS)"))
+          ((and (equal size 0) (not xs)) '())
+          ((equal size 0)
+           (error "SIZE must be > 0 if XS is non-empty"))
+          (t (successive-sublists-helper xs size 0 '()))))
+#+end_src
+
+#+begin_src emacs-lisp
+ELISP> (successive-sublists '(:foo :bar :baz) 2)
+
+"xs: (:foo :bar :baz)   size: 2 start: 0    acc: nil"
+
+"xs: (:foo :bar :baz)   size: 2 start: 1    acc: ((:foo :bar))"
+
+"xs: (:foo :bar :baz)   size: 2 start: 2    acc: ((:bar :baz) (:foo :bar))"
+
+*** Eval error ***  Slice is too large.
+#+end_src
+
++Ah, I just need to check that the difference between size and start is less
+than or equal to size.+ Wait, no, size >= length(xs) - start for this to work,
+so return acc once length(xs) - start > size.
+
+#+begin_src emacs-lisp
+ELISP> (successive-sublists '(:foo :bar :baz) 2)
+nil
+#+end_src
+
+Nope. Other way.
+
+#+begin_src emacs-lisp
+  (defun successive-sublists-helper (xs size start acc)
+    (if (< (- (length xs) start) size) ;; like this
+        (reverse acc)
+      (successive-sublists-helper
+       xs
+       size
+       (1+ start)
+       (cons (slice xs start size) acc))))
+#+end_src
+
+#+begin_src emacs-lisp
+ELISP> (successive-sublists '(:foo :bar :baz) 2)
+
+"xs: (:foo :bar :baz)   size: 2 start: 0    acc: nil"
+
+"xs: (:foo :bar :baz)   size: 2 start: 1    acc: ((:foo :bar))"
+
+((:foo :bar)
+ (:bar :baz))
+#+end_src
+
+* How to solve this problem
+It seems like you need to curry some function so that you have
+
+#+begin_src emacs-lisp
+  (lambda (xs) (compare-equal-length-lists shorter-list xs))
+#+end_src
+
+and then apply that lambda to the lists generated by
+
+#+begin_src emacs-lisp
+  (successive-sublists longer-list)
+#+end_src
+
+Yeah, that should be it. That will result in a list of ~:equal~ and ~:unequal~,
+and then you can filter for ~:equal:~, and if there are any, ~shorter-list~ is
+a sublist of ~longer-list~.
+
+* Default function values
+
+#+begin_src emacs-lisp
+(defun any-p (sexp xs &optional test)
+  "Return T if any elements of XS are SEXP; otherwise NIL. TEST defaults to
+#'equal; otherwise TEST will be used to compare SEXP and elements of XS."
+  (let ((test (or test #'equal)))
+    (if xs
+        (or (and xs (funcall test sexp xs))
+            (anyp sexp (cdr xs) test))
+      nil)))
+#+end_src
+
+leads to
+
+#+begin_src emacs-lisp
+FFFFF....................
+
+F anyp-alternate-test
+    (wrong-type-argument stringp
+                         ("foo" "bar"))
+
+F anyp-nil-sexp-in-empty-list-nil
+    (void-variable equal)
+
+F anyp-non-nil-sexp-in-nil-is-nil
+    (void-variable equal)
+
+F anyp-sexp-in-non-empty-list
+    (void-variable equal)
+
+F anyp-sexp-not-in-non-empty-list
+    (void-variable equal)
+#+end_src
+
+in ERT testing.
+
+#+begin_src emacs-lisp
+ELISP> (or nil equal)
+*** Eval error ***  Symbol’s value as variable is void: equal
+ELISP> (equal 1 2)
+nil
+ELISP> (equal (+ 2 2) 4)
+t
+#+end_src
+
+Hmm, that seems weird.
+
++Oh, I forgot the idiomatic way to do it:+
+
+#+begin_src emacs-lisp
+  (or x (setq x :value)) ;; NO!
+#+end_src
+
++see [[https://stackoverflow.com/a/30270318][How do I evaluate "&optional argument" in emacs lisp? | stackoverflow]].+
+
+Actually, I like [[https://emacs.stackexchange.com/q/14199][Optional parameter defaults | stackoverflow]] better because
+it's in a =let=.
+
+#+begin_src emacs-lisp
+  (defun any-p (sexp xs &optional test)
+    "Return T if any elements of XS are SEXP; otherwise NIL. TEST defaults to
+  #'equal; otherwise TEST will be used to compare SEXP and elements of XS."
+    (let ((eq-test (or test equal)))
+      (if xs
+          (or (and xs (funcall eq-test sexp xs))
+              (anyp sexp (cdr xs) test))
+        nil)))
+#+end_src
+
+#+begin_src emacs-lisp
+ELISP> (anyp :foo '(:foo :bar))
+*** Eval error ***  Symbol’s value as variable is void: equal
+#+end_src
+
+Still not working 🤔 Maybe it's because I've called the function =any-p= and
+I'm trying to call the function =anyp=? That seems unrelated but worth fixing.
+
+#+begin_src emacs-lisp
+ELISP> (anyp :foo '(:foo :bar))
+*** Eval error ***  Symbol’s value as variable is void: equal
+#+end_src
+
+Yeah, fixing that didn't fix this. Well, let's check that =equal= is in fact a
+function.
+
+#+begin_src emacs-lisp
+ELISP> (functionp #'setq)
+nil
+ELISP> (functionp #'length)
+t
+ELISP> (functionp #'eq)
+t
+ELISP> (functionp #'equal)
+t
+#+end_src
+
+Sharp-quoting =equal= fixed the eval error, but the function still isn't
+working as it's supposed to.
+
+#+begin_src emacs-lisp
+ELISP> (anyp :foo '(:foo :bar))
+nil
+#+end_src
+
+Oh, duh, I wasn't checking the =car= of =xs= :facepalm:
+
+:facepalm::facepalm: This is very similar to the behavior of =member=.
+
+* =compare-successive-sublists= debugging
+
+#+begin_src emacs-lisp
+  (defun compare-successive-sublists (shorter longer)
+    (mapcar #'(lambda (xs) (compare-equal-length-lists shorter xs))
+            (successive-sublists longer)))
+#+end_src
+
+producing the following output:
+
+#+begin_src emacs-lisp
+ELISP> (compare-successive-sublists '(:baz :qux) '(:foo :bar :baz :qux))
+*** Eval error ***  Wrong number of arguments: ((t) (xs size) "Break XS into as many sublists of length SIZE as possible and return as a
+list of lists; e.g.
+
+(successive-sublists '(:foo :bar :baz :qux) 2) ->
+('(:foo :bar) '(:bar :baz) '(:baz :qux))" (defalias 'successive-sublists-helper
+#'(lambda (xs size start acc) (if (< (- (length xs) start) size) (reverse acc)
+(successive-sublists-helper xs size (1+ start) (cons (slice xs start size)
+acc))))) (cond ((> size (length xs)) (error "SIZE must be ≤ (length XS)"))
+((and (equal size 0) (not xs)) 'nil) ((equal size 0) (error "SIZE must be > 0
+if XS is non-empty")) (t (successive-sublists-helper xs size 0 'nil)))), 1
+#+end_src
+
+Issue is that I need to call =successive-sublists= with a size, that size being
+the length of the shorter list.
+
+#+begin_src emacs-lisp
+  (defun compare-successive-sublists (shorter longer)
+    (mapcar #'(lambda (xs) (compare-equal-length-lists shorter xs))
+            (successive-sublists longer (length shorter))))
+#+end_src
+
+New result:
+
+#+begin_src emacs-lisp
+ELISP> (compare-successive-sublists '(:baz :qux) '(:foo :bar :baz :qux))
+(:unequal :unequal :equal)
+#+end_src
