@@ -58,11 +58,17 @@ order, in which case they're :equal; otherwise, return :unequal."
         (t (error "Lists are of unequal length.")))
   (compare-equal-length-lists-helper xs ys))
 
+(defun successive-sublists (xs size)
+  "Break XS into as many sublists of length SIZE as possible and return as a
+list of lists; e.g.
+
+(successive-sublists '(:foo :bar :baz :qux) 2) ->
+('(:foo :bar) '(:bar :baz) '(:baz :qux))"
+  )
+
 (defun list-classify (list1 list2)
   "Determine if LIST1 is equal to, a sublist of, a superlist of, or unequal to
 LIST2."
-
-
 
   (cond ((and (not list1) list2) :sublist)
         ((and list1 (not list2)) :superlist)
