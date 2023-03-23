@@ -167,5 +167,35 @@ ELISP> (successive-sublists '(:foo :bar :baz) 2)
 *** Eval error ***  Slice is too large.
 #+end_src
 
-Ah, I just need to check that the difference between size and start is less
-than or equal to size.
++Ah, I just need to check that the difference between size and start is less
+than or equal to size.+ Wait, no, size >= length(xs) - start for this to work,
+so return acc once length(xs) - start > size.
+
+#+begin_src emacs-lisp
+ELISP> (successive-sublists '(:foo :bar :baz) 2)
+nil
+#+end_src
+
+Nope. Other way.
+
+#+begin_src emacs-lisp
+  (defun successive-sublists-helper (xs size start acc)
+    (if (< (- (length xs) start) size) ;; like this
+        (reverse acc)
+      (successive-sublists-helper
+       xs
+       size
+       (1+ start)
+       (cons (slice xs start size) acc))))
+#+end_src
+
+#+begin_src emacs-lisp
+ELISP> (successive-sublists '(:foo :bar :baz) 2)
+
+"xs: (:foo :bar :baz)   size: 2 start: 0    acc: nil"
+
+"xs: (:foo :bar :baz)   size: 2 start: 1    acc: ((:foo :bar))"
+
+((:foo :bar)
+ (:bar :baz))
+#+end_src
