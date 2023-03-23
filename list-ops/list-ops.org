@@ -1,0 +1,25 @@
+#+title: List Ops IELM testing
+
+* =list-reverse=
+Use a helper function with an accumulator.
+
+#+begin_src emacs-lisp
+(defun list-reverse (list)
+  "Reverse the elements of LIST."
+  (defun reverse-helper (list acc)
+    (if list
+        (reverse helper (cdr list) (cons (car list) acc))
+      acc)))
+#+end_src
+
+#+begin_src emacs-lisp
+ELISP> (list-reverse '(1 2 3))
+reverse-helper
+#+end_src
+
+:facepalm: Oops, I always forget to call the helper function after defining it.
+
+#+begin_src emacs-lisp
+ELISP> (list-reverse '(1 2 3))
+(3 2 1)
+#+end_src
