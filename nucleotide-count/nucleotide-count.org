@@ -13,3 +13,76 @@ ELISP> (length (seq-filter (lambda (c) (eq ?A c)) "GATTACA"))
 #+end_src
 
 That looks promising!
+
+#+begin_src emacs-lisp
+(defun instances-of-char-in-string (c str)
+  "Count the number of times char C appears in string STR."
+  (length (seq-filter (lambda (letter) (eq c letter)) str)))
+#+end_src
+
+#+begin_src emacs-lisp
+ELISP> (instances-of-char-in-string ?A "GATTACA")
+3 (#o3, #x3, ?\C-c)
+ELISP> (instances-of-char-in-string ?X "GATTACA")
+0 (#o0, #x0, ?\C-@)
+#+end_src
+
+* Using =mapcar=
+
+#+begin_src emacs-lisp
+(defun nucleotide-count (sequence)
+  "Count number of instances of A, C, G, and T within SEQUENCE and report
+results as an alist."
+  (defun instances-of-char-in-string (c str)
+    "Count the number of times char C appears in string STR."
+    (length (seq-filter (lambda (letter) (eq c letter)) str)))
+  (let ((nucleotides '(?A ?C ?G ?T)))
+    (mapcar #'(lambda (n) (cons n (instances-of-char-in-string n sequence)))
+            nucleotides)))
+#+end_src
+
+This won't give errors, but it looks like it's starting to work.
+
+#+begin_src emacs-lisp
+ELISP> (nucleotide-count "GATTACA")
+((65 . 3)
+ (67 . 1)
+ (71 . 1)
+ (84 . 2))
+#+end_src
+
+Only failing one test:
+
+#+begin_src emacs-lisp
+..F.
+
+F invalid-nucleotide-test
+    (ert-test-failed
+     ((should-error
+       (nucleotide-count "AGGTCCXGA"))
+      :form
+      (nucleotide-count "AGGTCCXGA")
+      :value
+      ((65 . 2)
+       (67 . 2)
+       (71 . 3)
+       (84 . 1))
+      :fail-reason "did not signal an error"))
+#+end_src
+
+Idea: if the length of sequence isn't equal to the sum of the cdrs of the
+alist; then throw an error.
+
+* Summing up the values of an alist
+
+#+begin_src emacs-lisp
+ELISP> (mapcar #'cdr (nucleotide-count "GATTACA"))
+(3 1 1 2)
+ELISP> (+ (mapcar #'cdr (nucleotide-count "GATTACA")))
+*** Eval error ***  Wrong type argument: number-or-marker-p, (3 1 1 2)
+ELISP> (apply #'+ (mapcar #'cdr (nucleotide-count "GATTACA")))
+7 (#o7, #x7, ?\C-g)
+#+end_src
+
+see [[https://emacs.stackexchange.com/a/12288][Is there a general way to 'expand' a list for to be used as individual
+arguments to another function? | emacs.stackexchange]].
