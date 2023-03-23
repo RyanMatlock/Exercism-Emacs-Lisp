@@ -63,5 +63,21 @@
 (ert-deftest compeqlenl-empty-lists-are-equal ()
   (should (equal :equal (compare-equal-length-lists '() '()))))
 
+(ert-deftest transposition-of-elements-unequal-lists ()
+  (should (equal :unequal (compare-equal-length-lists '(:foo :bar :baz)
+                                                      '(:bar :foo :baz)))))
+
+(let ((longer '(:foo :bar :baz))
+      (shorter '(:foo :bar)))
+  (ert-deftest unequal-lengths-should-error-smaller-list-first ()
+    (should-error (compare-equal-length-lists shorter longer)))
+
+  (ert-deftest unequal-lengths-should-error-larger-list-first ()
+    (should-error (compare-equal-length-lists longer shorter))))
+
+(ert-deftest non-empty-equal-lists-are-equal ()
+  (let ((lst '(:foo :bar :baz)))
+    (should (equal :equal (compare-equal-length-lists lst lst)))))
+
 (provide 'sublist-additional-testing)
 ;;; sublist-additional-testing.el ends here
