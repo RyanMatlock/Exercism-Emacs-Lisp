@@ -103,5 +103,25 @@
                    (:baz :qux))
                  (successive-sublists '(:foo :bar :baz :qux) 2))))
 
+;; --- anyp testing ---
+(declare-function anyp "sublist.el" (sexp xs &optional test))
+
+;; if I knew more about discrete math, I might want this to actually return
+;; true in case it's one of those situations like 0! = 1
+(ert-deftest anyp-nil-sexp-in-empty-list-nil ()
+  (should (equal nil (anyp '() '()))))
+
+(ert-deftest anyp-non-nil-sexp-in-nil-is-nil ()
+  (should (equal nil (anyp :foo '()))))
+
+(ert-deftest anyp-sexp-not-in-non-empty-list ()
+  (should (equal nil (anyp :foo '(:bar :baz :qux)))))
+
+(ert-deftest anyp-sexp-in-non-empty-list ()
+  (should (equal t (anyp :foo '(:bar :baz :qux :foo)))))
+
+(ert-deftest anyp-alternate-test ()
+  (should (equal t (anyp "foo" '("foo" "bar") #'string=))))
+
 (provide 'sublist-additional-testing)
 ;;; sublist-additional-testing.el ends here
