@@ -81,6 +81,15 @@ list of lists; e.g.
          (error "SIZE must be > 0 if XS is non-empty"))
         (t (successive-sublists-helper xs size 0 '()))))
 
+(defun anyp (sexp xs &optional test)
+  "Return T if any elements of XS are SEXP; otherwise NIL. TEST defaults to
+#'equal; otherwise TEST will be used to compare SEXP and elements of XS."
+  (let ((eq-test (or test #'equal)))
+    (if xs
+        (or (and xs (funcall eq-test sexp (car xs)))
+            (anyp sexp (cdr xs) test))
+      nil)))
+
 (defun list-classify (list1 list2)
   "Determine if LIST1 is equal to, a sublist of, a superlist of, or unequal to
 LIST2."
