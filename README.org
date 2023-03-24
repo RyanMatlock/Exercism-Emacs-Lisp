@@ -1,0 +1,3 @@
+These are my solutions to [[https://exercism.org/][Exercism]]'s Emacs Lisp exercises. In order to
+facilitate future reference, I've kept some dead code, and IELM REPL results in
+the main branch instead of buried in the commit history.
