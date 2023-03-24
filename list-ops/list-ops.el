@@ -59,7 +59,12 @@ Note that the direction matters for non-associative functions."
   (length-helper list 0))
 
 (defun list-append (list1 list2)
-  (error "Delete this S-Expression and write your own implementation"))
+  "Add elements of LIST2 to the end of LIST1."
+  (defun append-helper (xs acc)
+    (if xs
+        (append-helper (cdr xs) (cons (car xs) acc))
+      (list-reverse acc)))
+  (append-helper list2 (list-reverse list1)))
 
 (defun list-reverse (list)
   "Reverse the elements of LIST."
