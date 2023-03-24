@@ -6,7 +6,12 @@
 
 
 (defun list-foldl (fun list accu)
-  (error "Delete this S-Expression and write your own implementation"))
+  "Apply FUN, a function of two arguments, to each element of LIST and ACCU,
+starting from the left of LIST."
+  (let ((x (car list)))
+    (if list
+        (list-foldl fun (cdr list) (funcall fun accu x))
+      accu)))
 
 (defun list-foldr (fun list accu)
   (error "Delete this S-Expression and write your own implementation"))
