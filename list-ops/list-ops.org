@@ -65,3 +65,106 @@ nil
 
 Looks like it's working now.
 
+* The difference between =foldl= and =foldr=; =foldr= implementation
+Because some functions are associative, =foldl= and =foldr= will produce
+different results; see [[https://stackoverflow.com/a/13280185][Haskell - foldl and foldr? | stackoverflow]].
+
+This is my first idea of how to implement =foldr=:
+
+#+begin_src emacs-lisp
+(defun list-foldr (fun list accu)
+  "Apply FUN, a function of two arguments, to each element of LIST and ACCU,
+starting from the right of LIST. The function is applied as
+  (FUN item ACCU).
+Note that the direction matters for non-associative functions."
+  (defun foldr-helper (fun list accu index)
+    (if (>= 0 index)
+        (foldr-helper
+         fun list (funcall fun (nth index list) accu) accu (1- index))
+      accu))
+  (foldr-helper fun list accu (1- (length list))))
+#+end_src
+
+But it's early, and while I'm understanding that there is a difference with
+=foldl= in terms of associativity, I'm not fully grokking the way =foldr= is
+traversing the list (maybe the difference is only the order that it's being
+called?).
+
+#+begin_src emacs-lisp
+ELISP> (list-foldr #'- '(1400 300 500 100) 3000)
+3000 (#o5670, #xbb8)
+ELISP> (list-foldl #'- '(1400 300 500 100) 3000)
+700 (#o1274, #x2bc)
+#+end_src
+
+*This is wrong:*
+
++Because subtraction is a simple example of a non-associative operator, let's
+think about it in terms of a concrete example. Suppose I have a budget and a
+list of expenses, and I'm trying to figure out how much is left over. With
+=foldl=, my budget is the initial value of the accumulator, and my expenses are
+the list. With =foldr=, my budget is the first value of the list, the
+accumulator should be 0, and my expenses are the remaining values of the list.+
+
+*This is correct:*
+
+/=foldl= and =foldr= are *both* traversed from the first to the last element of
+the list/; the difference is the order in which the function calls the elements
+and the accumulator. =foldl='s order is =(funcall function accumulator
+element)=, and =foldr='s order is =(funcall function element accumulator)=.
+
+#+begin_src emacs-lisp
+ELISP> (list-foldl #'- '(1400 300 500 100) 3000)
+700 (#o1274, #x2bc)
+ELISP> (list-foldr #'- '(3000 1400 300 500 100) 0)
+1500 (#o2734, #x5dc)
+ELISP> (list-foldl #'- '(200 100) 1000)
+700 (#o1274, #x2bc)
+ELISP> (list-foldr #'- '(1000 200 100) 0)
+900 (#o1604, #x384)
+#+end_src
+
+Ok, this behavior isn't matching my example. Oh, I get it. With =foldr=, I'm
+doing
+
+\begin{equation*}
+100 - (200 - (1000 - 0)),
+\end{equation*}
+
+and with =foldl=, I'm doing
+
+\begin{equation*}
+(1000 - 200) - 100,
+\end{equation*}
+
+so they're doing /very/ different things.
+
+Ok, I'm still failing a test. Current implementation:
+
+#+begin_src emacs-lisp
+(defun list-foldr (fun list accu)
+  "Apply FUN, a function of two arguments, to each element of LIST and
+ACCU. The function is applied as
+  (FUN item ACCU).
+Note that the direction matters for non-associative functions."
+  (if list
+      (list-foldr fun (cdr list) (funcall fun (car list) accu))
+    accu))
+#+end_src
+
+(partial) test results:
+
+#+begin_src emacs-lisp
+F foldr-floating-point-division
+    (ert-test-failed
+     ((should
+       (equal 9.0
+              (list-foldr
+               (lambda ... ...)
+               '... 24.0)))
+      :form
+      (equal 9.0 64.0)
+      :value nil :explanation
+      (different-atoms 9.0 64.0)))
+#+end_src
+

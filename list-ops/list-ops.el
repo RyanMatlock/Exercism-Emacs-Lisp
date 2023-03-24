@@ -16,7 +16,13 @@ Note that the direction matters for non-associative functions."
       accu)))
 
 (defun list-foldr (fun list accu)
-  (error "Delete this S-Expression and write your own implementation"))
+  "Apply FUN, a function of two arguments, to each element of LIST and
+ACCU. The function is applied as
+  (FUN item ACCU).
+Note that the direction matters for non-associative functions."
+  (if list
+      (list-foldr fun (cdr list) (funcall fun (car list) accu))
+    accu))
 
 (defun list-empty-p (list)
   "Return T if LIST is empty; otherwise return NIL."
