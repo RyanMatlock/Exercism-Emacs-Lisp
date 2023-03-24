@@ -1,3 +1,7 @@
+#+options: ':nil
+# stolen from https://tex.stackexchange.com/a/635
+#+latex_header: \newcommand{\prefix}[3]{#1\enspace#2\enspace#3}
+#+latex_header: \newcommand\Div[2]{(\prefix{/}{#1}{#2})}
 #+title: List Ops IELM testing
 
 * =list-reverse=
@@ -37,12 +41,12 @@ starting from the left of LIST."
       accu)))
 #+end_src
 
-#+begin_src emacs-lisp
+#+begin_example
 ELISP> (list-foldl #'and '(t t t nil) t)
-*** Eval error ***  Invalid function: #<subr and>
+​*** Eval error ***  Invalid function: #<subr and>
 ELISP> (list-foldl #'(lambda (x y) (and x y)) '(t t t nil) t)
 t
-#+end_src
+#+end_example
 
 [Note: recall that =and= is actually /not/ a function, so you need to use a =lambda=
 to use it as one, but thats beside the point.]
@@ -106,11 +110,11 @@ list of expenses, and I'm trying to figure out how much is left over. With
 the list. With =foldr=, my budget is the first value of the list, the
 accumulator should be 0, and my expenses are the remaining values of the list.+
 
-*This is correct:*
++*This is correct:*+ *No, this is still wrong:*
 
-/=foldl= and =foldr= are *both* traversed from the first to the last element of
++/=foldl= and =foldr= are *both* traversed from the first to the last element of
 the list/; the difference is the order in which the function calls the elements
-and the accumulator. =foldl='s order is =(funcall function accumulator
+and the accumulator.+ =foldl='s order is =(funcall function accumulator
 element)=, and =foldr='s order is =(funcall function element accumulator)=.
 
 #+begin_src emacs-lisp
@@ -167,4 +171,159 @@ F foldr-floating-point-division
       :value nil :explanation
       (different-atoms 9.0 64.0)))
 #+end_src
+
+*[Very cool aside: someone figured out how to use s-expressions in LaTeX: see
+[[https://alejandrogallo.github.io/listex/][LisTeX]]. That said, I like the solution posed in [[https://tex.stackexchange.com/a/635][Using prefix notation |
+tex.stackexchange]]]*
+
+Here's how I thought this worked:
+
+#+begin_latex
+  \begin{align*}
+    (\texttt{foldr } \texttt{\#'/ } \texttt{'}(1\ 2\ 3\ 4)\ 24) &=
+    % (/\ 4\ (/\ 3\  (/\ 2\ (/\ 1\ 24))))
+    % \prefix{/}{1}{24}
+    \Div{4}{\Div{3}{\Div{2}{\Div{1}{24}}}} \\
+    \Div{1}{24} &= \frac{1}{24} \\
+    \Div{2}{\Div{1}{24}} &= \frac{2}{\frac{1}{24}} = 2 \cdot \frac{24}{1} = 48 \\
+    \Div{3}{\Div{2}{\Div{1}{24}}} &= \frac{3}{48} = \frac{1}{16} \\
+    \Div{4}{\Div{3}{\Div{2}{\Div{1}{24}}}} &= \frac{4}{\frac{1}{16}}
+                                             = 4 \cdot \frac{16}{1} = 64
+  \end{align*}
+#+end_latex
+
+Which is what my implementation of =list-foldr= returned; however,
+
+#+begin_src haskell
+ghci> foldr (/) 24 [1..4]
+9.0
+#+end_src
+
+and since that's the standard Haskell library, I'm sure it's right.
+
+[Aside: look into =org-edit-special= to work on =latex= blocks too; it works on
+LaTeX src blocks but not on plain LaTeX blocks; note that it does work the way
+you want it to within the =align= environment.]
+
+Let's try this going right to left on the list:
+
+#+begin_latex
+\begin{align*}
+  (\texttt{foldr } \texttt{\#'/ } \texttt{'}(1\ 2\ 3\ 4)\ 24) &=
+  \Div{1}{\Div{2}{\Div{3}{\Div{4}{24}}}} \\
+  \Div{4}{24} &= \frac{1}{6} \\
+  \Div{3}{\Div{4}{24}} &= \frac{3}{\frac{1}{6}} = 18 \\
+  \Div{2}{\Div{3}{\Div{4}{24}}} &= \frac{2}{18} = \frac{1}{9} \\
+  \Div{1}{\Div{2}{\Div{3}{\Div{4}{24}}}} &= \frac{1}{\frac{1}{9}} = 9\enspace \checkmark
+\end{align*}
+#+end_latex
+
+Now I'm confused as to why my original implementation didn't work. I tried to
+traverse the list from right to left using =nth=.
+
+From
+
+#+begin_example
+F foldr-floating-point-division
+    (ert-test-failed
+     ((should
+       (equal 9.0
+              (list-foldr
+               (lambda ... ...)
+               '... 24.0)))
+      :form
+      (equal 9.0 24.0)
+      :value nil :explanation
+      (different-atoms 9.0 24.0)))
+#+end_example
+
+I'm seeing that the accumulator was immediately returned, and I think it's
+because I used the wrong comparison when checking the index (for some reason,
+I'm still occasionally tripped up by prefix comparison operators).
+
+Found another bug where I passed the wrong number of arguments to the helper,
+but I'm still having issues:
+
+#+begin_example
+ELISP> (list-foldr #'/ '(1 2 3 4) 24)
+​*** Eval error ***  Arithmetic error
+ELISP> (list-foldr #'(lambda (elem acc) (/ elem acc)) '(1 2 3 4) 24)
+​*** Eval error ***  Arithmetic error
+#+end_example
+
+[Aside: for long debugging print statements, check out the following:
+
+#+begin_src emacs-lisp
+ELISP> (format (concat "foo: %s\n"
+                       "bar") "baz")
+"foo: baz
+bar"
+#+end_src
+
+neat, right?]
+
+Got it. Here it is with some debugging thrown in:
+
+#+begin_src emacs-lisp
+(defun list-foldr (fun list accu)
+  "Apply FUN, a function of two arguments, to each element of LIST and ACCU,
+starting from the right of LIST. The function is applied as
+  (FUN item ACCU).
+Note that the direction matters for non-associative functions."
+  (defun foldr-helper (fun list accu index)
+    (if (>= index 0)
+        (let* ((elem (nth index list))
+               (new-accu (funcall fun elem accu)))
+          (print (format (concat "index: %d\n"
+                                 "\telem: %d\n"
+                                 "\taccu: %d\n"
+                                 "\tnew-accu: %d")
+                         index elem accu new-accu))
+          (foldr-helper
+           fun list new-accu (1- index)))
+      accu))
+  (foldr-helper fun list accu (1- (length list))))
+#+end_src
+
+Here's what I was getting in IELM:
+
+#+begin_example
+ELISP> (list-foldr #'/ '(1 2 3 4) 24)
+
+"index: 3
+    elem: 4
+    accu: 24
+    new-accu: 0"
+
+​*** Eval error ***  Arithmetic error
+ELISP> (list-foldr #'/ '(1 2 3 4) 24.0)
+
+"index: 3
+    elem: 4
+    accu: 24
+    new-accu: 0"
+
+"index: 2
+    elem: 3
+    accu: 0
+    new-accu: 18"
+
+"index: 1
+    elem: 2
+    accu: 18
+    new-accu: 0"
+
+"index: 0
+    elem: 1
+    accu: 0
+    new-accu: 9"
+
+9.0
+#+end_example
+
+So part of the issue was a type error using integers. :fingers_crossed: I should
+pass the tests now.
+
+Got it 😎
+
 
