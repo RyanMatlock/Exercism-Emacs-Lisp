@@ -75,7 +75,11 @@ Note that the direction matters for non-associative functions."
   (reverse-helper list '()))
 
 (defun list-concatenate (list1 list2 &rest LISTS)
-  (error "Delete this S-Expression and write your own implementation"))
+  "Add the elements of LIST2 to LIST1 as well as any remaining LISTS."
+  (let ((newlist (list-append list1 list2)))
+    (if LISTS
+        (list-foldl #'list-append LISTS newlist)
+      newlist)))
 
 (defun list-filter (list predicate)
   "Return a list containing only elements of LIST where PREDICATE is T."
