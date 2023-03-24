@@ -16,13 +16,23 @@ Note that the direction matters for non-associative functions."
       accu)))
 
 (defun list-foldr (fun list accu)
-  "Apply FUN, a function of two arguments, to each element of LIST and
-ACCU. The function is applied as
+  "Apply FUN, a function of two arguments, to each element of LIST and ACCU,
+starting from the right of LIST. The function is applied as
   (FUN item ACCU).
 Note that the direction matters for non-associative functions."
-  (if list
-      (list-foldr fun (cdr list) (funcall fun (car list) accu))
-    accu))
+  (defun foldr-helper (fun list accu index)
+    (if (>= index 0)
+        (let* ((elem (nth index list))
+               (new-accu (funcall fun elem accu)))
+          ;; (print (format (concat "index: %d\n"
+          ;;                        "\telem: %d\n"
+          ;;                        "\taccu: %d\n"
+          ;;                        "\tnew-accu: %d")
+          ;;                index elem accu new-accu))
+          (foldr-helper
+           fun list new-accu (1- index)))
+      accu))
+  (foldr-helper fun list accu (1- (length list))))
 
 (defun list-empty-p (list)
   "Return T if LIST is empty; otherwise return NIL."
