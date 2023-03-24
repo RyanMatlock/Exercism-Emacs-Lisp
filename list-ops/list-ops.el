@@ -53,7 +53,12 @@
   (error "Delete this S-Expression and write your own implementation"))
 
 (defun list-map (list fun)
-  (error "Delete this S-Expression and write your own implementation"))
+  "Return list where FUN has been applied to all elements of LIST."
+  (defun map-helper (list fun acc)
+    (if list
+        (map-helper (cdr list) fun (cons (funcall fun (car list)) acc))
+      (list-reverse acc)))
+  (map-helper list fun '()))
 
 (provide 'list-ops)
 ;;; list-ops.el ends here
