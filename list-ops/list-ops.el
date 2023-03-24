@@ -50,7 +50,14 @@
   (error "Delete this S-Expression and write your own implementation"))
 
 (defun list-filter (list predicate)
-  (error "Delete this S-Expression and write your own implementation"))
+  "Return a list containing only elements of LIST where PREDICATE is T."
+  (defun filter-helper (list predicate acc)
+    (let ((elem (car list)))
+      (cond ((not elem) (reverse acc))
+            ((funcall predicate elem)
+             (filter-helper (cdr list) predicate (cons elem acc)))
+            (t (filter-helper (cdr list) predicate acc)))))
+  (filter-helper list predicate '()))
 
 (defun list-map (list fun)
   "Return list where FUN has been applied to all elements of LIST."
