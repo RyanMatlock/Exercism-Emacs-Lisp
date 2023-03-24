@@ -327,3 +327,26 @@ pass the tests now.
 Got it 😎
 
 
+* =list-append=
+This one seems a little tricky because successive =cdr=​ing of =list2= and
+=cons=​ing onto =list1= won't give the right order.
+
+I could reverse =list1= and then successively =cons= onto that with the =car=
+of =list2= and then reverse the whole thing. Inefficient, but I think it works.
+
+#+begin_src emacs-lisp
+(defun list-append (list1 list2)
+  "Add elements of LIST2 to the end of LIST1."
+  (defun append-helper (xs acc)
+    (if xs
+        (append-helper (cdr xs) (cons (car xs) acc))
+      (list-reverse acc)))
+  (append-helper list2 (list-reverse list1)))
+#+end_src
+
+#+begin_src emacs-lisp
+ELISP> (list-append '(1 2) '(3 4))
+(1 2 3 4)
+#+end_src
+
+That was actually pretty straightforward even if it's an ugly way to do things.
