@@ -18,7 +18,14 @@
     t))
 
 (defun list-sum (list)
-  (error "Delete this S-Expression and write your own implementation"))
+  "Sum up the elements in LIST."
+  ;; I'm assuming they're not looking for me to use (apply #'+ list) here even
+  ;; though that's the idiomatic way to do it
+  (defun sum-helper (list total)
+    (if list
+        (sum-helper (cdr list) (+ (car list) total))
+      total))
+  (sum-helper list 0))
 
 (defun list-length (list)
   "Return the number of top-level elements in LIST."
