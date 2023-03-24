@@ -30,7 +30,7 @@ DIVISOR is 0."
                                 factors-alist
                                 "")))
     (if (string= "" raindrops)
-        n
+        (number-to-string n)
       raindrops)))
 
 (provide 'raindrops)
