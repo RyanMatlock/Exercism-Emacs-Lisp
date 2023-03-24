@@ -23,3 +23,45 @@ reverse-helper
 ELISP> (list-reverse '(1 2 3))
 (3 2 1)
 #+end_src
+
+* =list-foldl= gotcha
+Started out with
+
+#+begin_src emacs-lisp
+(defun list-foldl (fun list accu)
+  "Apply FUN, a function of two arguments, to each element of LIST and ACCU,
+starting from the left of LIST."
+  (let ((x (car list)))
+    (if x
+        (list-foldl fun (cdr list) (funcall fun accu x))
+      accu)))
+#+end_src
+
+#+begin_src emacs-lisp
+ELISP> (list-foldl #'and '(t t t nil) t)
+*** Eval error ***  Invalid function: #<subr and>
+ELISP> (list-foldl #'(lambda (x y) (and x y)) '(t t t nil) t)
+t
+#+end_src
+
+[Note: recall that =and= is actually /not/ a function, so you need to use a =lambda=
+to use it as one, but thats beside the point.]
+
+Where I screwed up was checking =(if (car list) ...)= rather than =(if list
+...)=, which is what I should've checked. The former will go to the else block
+if any element is =nil=, which is especially bad for =reduce= functions because
+they're good for =any= and =all= functions.
+
+#+begin_src emacs-lisp
+ELISP> (functionp #'and)
+nil
+ELISP> (list-foldl #'(lambda (x y) (and x y)) '(t t t nil) t)
+nil
+ELISP> (list-foldl #'(lambda (x y) (or x y)) '(nil t nil) nil)
+t
+ELISP> (list-foldl #'(lambda (x y) (or x y)) '(nil nil) nil)
+nil
+#+end_src
+
+Looks like it's working now.
+
