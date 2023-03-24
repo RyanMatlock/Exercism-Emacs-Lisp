@@ -350,3 +350,40 @@ ELISP> (list-append '(1 2) '(3 4))
 #+end_src
 
 That was actually pretty straightforward even if it's an ugly way to do things.
+
+* =list-concatenate=
+Ok, this one actually seems a bit challenging because I'm not used to working
+with =&rest= arguments yet.
+
+Let's just make sure it's not actually easy with =apply=:
+
+#+begin_example
+ELISP> (apply #'list-append '(1 2) '(3 4) '(5 6))
+​*** Eval error ***  Wrong number of arguments: ((t) (list1 list2) "Add elements
+of LIST2 to the end of LIST1." (defalias 'append-helper #'(lambda (xs acc) (if
+xs (append-helper (cdr xs) (cons (car xs) acc)) (list-reverse acc))))
+(append-helper list2 (list-reverse list1))), 4
+#+end_example
+
+Nope. But =foldl=?
+
+#+begin_src emacs-lisp
+ELISP> (list-foldl #'list-append '((1 2) (3 4) (5 6)) '())
+(1 2 3 4 5 6)
+#+end_src
+
+That looks like something. Maybe =append= =list2= onto =list1=, and then if
+there are more lists, feed that into =(foldl #'list-append ...)=?
+
+I guess it would look something like
+
+#+begin_src emacs-lisp
+(defun list-concatenate (list1 list2 &rest LISTS)
+  "Add the elements of LIST2 to LIST1 as well as any remaining LISTS."
+  (let ((newlist (list-append list1 list2)))
+    (if LISTS
+        (list-foldl #'list-append LISTS newlist)
+      newlist)))
+#+end_src
+
+Got it on the first try.
