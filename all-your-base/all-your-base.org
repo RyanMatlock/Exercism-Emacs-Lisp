@@ -1,3 +1,6 @@
+# stolen from https://tex.stackexchange.com/a/635
+#+latex_header: \newcommand{\prefix}[3]{#1\enspace#2\enspace#3}
+#+latex_header: \newcommand\Div[2]{(\prefix{/}{#1}{#2})}
 #+title: All Your Base IELM testing
 
 * Stuff from weeks ago
@@ -111,3 +114,258 @@ So the 42 is in the accumulator, I just need to get it out.
 
 I just had the accumulator in the wrong place/at the wrong level of
 parentheses. The print statement really helped with the debugging!
+
+* =base-10-to-base-n= debugging
+
+What I started with:
+
+#+begin_src emacs-lisp
+(defun base-10-to-base-n (base-10-num base-n)
+  "Convert BASE-10-NUM to a BASE-N number in the form of a list of digits.
+
+Note that
+  (base-10-to-base-n (base-n-to-base-10 digits n) n) => digits."
+  (defun 10-to-n-helper (num base-n power acc)
+    (if (> num 0)
+        (let* ((position (expt base-n power))
+               (digit (mod num position))
+               (rest (- num (* digit position))))
+          (10-to-n-helper rest base-n (1+ power) (cons digit acc)))
+      acc))
+  (10-to-n-helper base-10-num base-n 0 '()))
+#+end_src
+
+What I got:
+
+#+begin_src emacs-lisp
+ELISP> (base-10-to-base-n 42 2)
+(2 2 2 0 0)
+#+end_src
+
+Let's print the inner workings and see if we can make heads or tails of this.
+
+#+begin_src emacs-lisp
+  (defun base-10-to-base-n (base-10-num base-n)
+    "Convert BASE-10-NUM to a BASE-N number in the form of a list of digits.
+
+  Note that
+    (base-10-to-base-n (base-n-to-base-10 digits n) n) => digits."
+    (defun 10-to-n-helper (num base-n power acc)
+      (if (> num 0)
+          (let* ((position (expt base-n power))
+                 (digit (mod num position))
+                 (product (* digit position))
+                 (rest (- num product)))
+            (print (format (concat "num: %d\t"
+                                   "pow: %d\t"
+                                   "pos: %d\t"
+                                   "prod: %d\t"
+                                   "rest: %d\n"
+                                   "  acc: %s")
+                           num power position product rest acc))
+            (10-to-n-helper rest base-n (1+ power) (cons digit acc)))
+        acc))
+    (10-to-n-helper base-10-num base-n 0 '()))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (base-10-to-base-n 42 2)
+
+  "num: 42  pow: 0  pos: 1  prod: 0 rest: 42
+    acc: nil"
+
+  "num: 42  pow: 1  pos: 2  prod: 0 rest: 42
+    acc: (0)"
+
+  "num: 42  pow: 2  pos: 4  prod: 8 rest: 34
+    acc: (0 0)"
+
+  "num: 34  pow: 3  pos: 8  prod: 16    rest: 18
+    acc: (2 0 0)"
+
+  "num: 18  pow: 4  pos: 16 prod: 32    rest: -14
+    acc: (2 2 0 0)"
+
+  (2 2 2 0 0)
+#+end_src
+
+After convincing myself on pen and paper, I realized that you're supposed to go
+from the largest position to the smallest, so you'll need to write a helper
+function that determines what the largest power of =base-n= is less than or
+equal to the base-10 number you're converting. (I think you probably figured
+this out in the Roman numeral problem and then just forgot---or didn't realize
+that it's the same problem in a sense.)
+
+Here's how it works:[fn::Note that this is integer division.]
+
+#+begin_latex
+\begin{align*}
+  \Div{42}{2^6} &= 0 \\
+  \Div{42}{2^5} &= \fbox{1} \\
+  42 - (1 \cdot 2^5) &= 10 \\
+  \Div{32}{2^4} &= \fbox{0} \\
+  10 - (0 \cdot 2^4) &= 10 \\
+  \Div{10}{2^3} &= \fbox{1} \\
+  10 - (1 \cdot 2^3) &= 2 \\
+  \Div{2}{2^4} &= \fbox{0} \\
+  2 - (0 \cdot 2^4) &= 2 \\
+  \Div{2}{2^1} &= \fbox{1} \\
+  2 - (1 \cdot 2^1) &= 0 \\
+  \Div{0}{2^0} &= \fbox{0}
+\end{align*}
+#+end_latex
+
+Notice that the boxed results are the digits of 42 in base 2.
+
+Getting that largest power looks like:
+
+#+begin_src emacs-lisp
+  (defun largest-power-of-n-in-base-10 (base-10-num base-n)
+    "Return the largest number P such that
+  (> (/ BASE-10-NUM (expt BASE-N P)) 0)."
+    (defun largest-power-helper (base10 basen pow)
+      (if (> (/ base10 (expt basen pow)) 0)
+          (largest-power-helper base10 basen (1+ pow))
+        ;; careful here: don't return pow because it's too large
+        (1- pow)))
+    (largest-power-helper base-10-num base-n 0))
+#+end_src
+
+Almost there:
+
+#+begin_src emacs-lisp
+(defun base-10-to-base-n (base-10-num base-n)
+  "Convert BASE-10-NUM to a BASE-N number in the form of a list of digits.
+
+Note that
+  (base-10-to-base-n (base-n-to-base-10 digits n) n) => digits."
+
+  (defun largest-power-of-n-in-base-10 (base-10-num base-n)
+    "Return the largest number P such that
+(> (/ BASE-10-NUM (expt BASE-N P)) 0)."
+    (defun largest-power-helper (base10 basen pow)
+      (if (> (/ base10 (expt basen pow)) 0)
+          (largest-power-helper base10 basen (1+ pow))
+        ;; careful here: don't return pow because it's too large
+        (1- pow)))
+    (largest-power-helper base-10-num base-n 0))
+
+  (defun 10-to-n-helper (num base-n power acc)
+    ;; you could check for num or power to be > 0
+    (if (> power 0)
+        (let* ((position (expt base-n power)) ;; think of it like 10s place
+               (digit (/ num position))
+               (remainder (- num (* digit position))))
+          ;; note the power decrements -- it has to --  so start with the
+          ;; largest power
+          (10-to-n-helper remainder base-n (1- power) (cons digit acc)))
+      (reverse acc)))
+
+  (10-to-n-helper
+   base-10-num
+   base-n
+   (largest-power-of-n-in-base-10 base-10-num base-n)
+   '()))
+#+end_src
+
+#+begin_src emacs-lisp
+ELISP> (base-10-to-base-n 42 2)
+(1 0 1 0 1)
+#+end_src
+
+I lopped off the last zero. Going to debug. Switched the return test and still
+having that issue.
+
+#+begin_src emacs-lisp
+  (defun 10-to-n-helper (num base-n power acc)
+    (if (not (equal num 0))
+        (let* ((position (expt base-n power)) ;; think of it like 10s place
+               (digit (/ num position))
+               (remainder (- num (* digit position))))
+          (print (format (concat "num: %d\t"
+                                 "pow: %d\t"
+                                 "pos: %d\t"
+                                 "dig: %d\t"
+                                 "rem: %d\n\t"
+                                 "(rev acc): %s")
+                         num power position digit remainder (reverse acc)))
+          ;; note the power decrements -- it has to --  so start with the
+          ;; largest power
+          (10-to-n-helper remainder base-n (1- power) (cons digit acc)))
+      (reverse acc)))
+#+end_src
+
+#+begin_src emacs-lisp
+ELISP> (base-10-to-base-n 42 2)
+
+"num: 42    pow: 5  pos: 32 dig: 1  rem: 10
+    (rev acc): nil"
+
+"num: 10    pow: 4  pos: 16 dig: 0  rem: 10
+    (rev acc): (1)"
+
+"num: 10    pow: 3  pos: 8  dig: 1  rem: 2
+    (rev acc): (1 0)"
+
+"num: 2 pow: 2  pos: 4  dig: 0  rem: 2
+    (rev acc): (1 0 1)"
+
+"num: 2 pow: 1  pos: 2  dig: 1  rem: 0
+    (rev acc): (1 0 1 0)"
+
+(1 0 1 0 1)
+#+end_src
+
+Ok, this is good. I think I should use power to control when the accumulator is
+returned actually, and I just need to make sure it includes power == 0.
+
+Got it.
+
+#+begin_src emacs-lisp
+ELISP> (base-10-to-base-n 42 2)
+
+"num: 42    pow: 5  pos: 32 dig: 1  rem: 10
+    (rev acc): nil"
+
+"num: 10    pow: 4  pos: 16 dig: 0  rem: 10
+    (rev acc): (1)"
+
+"num: 10    pow: 3  pos: 8  dig: 1  rem: 2
+    (rev acc): (1 0)"
+
+"num: 2 pow: 2  pos: 4  dig: 0  rem: 2
+    (rev acc): (1 0 1)"
+
+"num: 2 pow: 1  pos: 2  dig: 1  rem: 0
+    (rev acc): (1 0 1 0)"
+
+"num: 0 pow: 0  pos: 1  dig: 0  rem: 0
+    (rev acc): (1 0 1 0 1)"
+
+(1 0 1 0 1 0)
+#+end_src
+
+Just changed that one line to (included surrounding lines for context)
+
+#+begin_src emacs-lisp
+  (defun 10-to-n-helper (num base-n power acc)
+    (if (>= power 0) ;;;; <<--- this line
+        (let* ((position (expt base-n power)) ;; think of it like 10s place
+#+end_src
+
+* Void variable when using =let= for ERT tests
+
+#+begin_src emacs-lisp
+(let ((num 923)
+      (base-n 7))
+  (ert-deftest base-10-to-n-to-10-identity ()
+    (should
+     (equal num (base-n-to-base-10 (base-10-to-base-n num base-n) base-n)))))
+#+end_src
+
+#+begin_example
+F base-10-to-n-to-10-identity
+    (void-variable num)
+#+end_example
+
+Confusing since I've gotten this to work before.
