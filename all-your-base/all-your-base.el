@@ -49,7 +49,21 @@ Note that
 
 (defun rebase (list-of-digits in-base out-base)
   "Convert LIST-OF-DIGITS from base IN-BASE to base OUT-BASE."
-  (base-10-to-base-n (base-n-to-base-10 list-of-digits in-base) out-base))
+  (let* ((min-base 2)
+         (base-error (lambda (base-name)
+                       (error (format (concat "%s must be greater than or "
+                                              "equal to %s.")
+                                      base-name min-base)))))
+    (cond ((and
+            list-of-digits
+            (>= in-base min-base)
+            (>= out-base min-base))
+           (base-10-to-base-n
+            (base-n-to-base-10 list-of-digits in-base) out-base))
+          ((not list-of-digits) (error "You need digits to transform"))
+          ((< in-base min-base) (base-error "IN-BASE"))
+          ((< out-base min-base) (base-error "OUT-BASE"))
+          (t (error "¯\\_(ツ)_/¯")))))
 
 (provide 'all-your-base)
 ;;; all-your-base.el ends here
