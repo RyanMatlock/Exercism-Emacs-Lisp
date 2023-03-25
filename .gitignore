@@ -1,1 +1,6 @@
 */.exercism/*
+
+# Org mode derived files
+*.tex
+*.pdf
+*.html
