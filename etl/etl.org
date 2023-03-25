@@ -1,0 +1,42 @@
+#+title: ETL
+
+* Passed tests locally, then failed on server, now failing locally
+
+#+begin_src emacs-lisp
+(defun etl (data)
+  "Translate hash table data, where keys are points and the values are lists of
+mixed case letters to a hash table where keys are lowercase letters and values
+are points."
+  (let ((newdata (make-hash-table :test #'equal)))
+    (defun swap-kv (k vs)
+      "Apply to data with maphash"
+      (let ((v (car vs)))
+        ;; it's weird writing impure code like this
+        (cond ((and v (stringp v))
+               (progn (puthash (downcase v) k newdata)
+                      (swap-kv k (cdr vs))))
+              (v (error "New keys must be chars/strings."))
+              (t nil)))
+      (if (< k 0)
+          (error "Keys should be non-negative.")
+        (swap-kv k vs)))
+    (maphash #'swap-kv data)
+    newdata))
+#+end_src
+
+#+begin_example
+Selector: t
+Passed:  3
+Failed:  1 (1 unexpected)
+Skipped: 0
+Total:   4/4
+
+Started at:   2023-03-25 13:44:33-0700
+Finished.
+Finished at:  2023-03-25 13:44:33-0700
+
+..F.
+
+F mixed-case-test
+    (error "Lisp nesting exceeds ‘max-lisp-eval-depth’")
+#+end_example
