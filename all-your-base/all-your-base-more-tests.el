@@ -10,22 +10,19 @@
 (ert-deftest base-10-to-base-2-42 ()
   (should (equal '(1 0 1 0 1 0) (base-10-to-base-n 42 2))))
 
-;; (let ((digits '(3 0 4 8 0 3))
-;;       (base-n 7))
-;;   (ert-deftest base-n-to-base-10-to-base-n-identity ()
-;;     (should
-;;      (equal digits
-;;             (base-10-to-base-n (base-n-to-base-10 digits base-n) base-n)))))
-
-;; (ert-deftest base-n-to-10-to-n-identity ()
-;;   (should (equal '(9 1 3)
-;;                  (base-10-to-base-n (base-n-to-base-10 '(9 1 3) 7) 7))))
-
-(let ((num 923)
-      (base-n 7))
-  (ert-deftest base-10-to-n-to-10-identity ()
+(ert-deftest base-10-to-n-to-10-identity ()
+  ;; for some reason, having let outside of ert-deftest didn't work ¯\_(ツ)_/¯
+  (let ((number 2432)
+        (base 5))
     (should
-     (equal num (base-n-to-base-10 (base-10-to-base-n num base-n) base-n)))))
+     (equal number (base-n-to-base-10 (base-10-to-base-n number base) base)))))
+
+(ert-deftest base-n-to-10-to-n-identity ()
+  (let ((digits '(7 8 4 2 0 6 3))
+        (base 9))
+    (should
+     (equal digits
+            (base-10-to-base-n (base-n-to-base-10 digits base) base)))))
 
 (provide 'all-your-base-more-tests)
 
