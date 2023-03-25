@@ -11,11 +11,6 @@
         (let* ((digit (car digits))
                (power (1- (length digits)))
                (base-10 (* digit (expt base-n power))))
-          ;; (print (format (concat "digit: %d\t"
-          ;;                        "power: %d\t"
-          ;;                        "base-10: %d\t"
-          ;;                        "acc: %d")
-          ;;                digit power base-10 acc))
           (n-to-10-helper (cdr digits) base-n (+ base-10 acc)))
       acc))
   (n-to-10-helper digits base-n 0))
@@ -41,13 +36,6 @@ Note that
         (let* ((position (expt base-n power)) ;; think of it like 10s place
                (digit (/ num position))
                (remainder (- num (* digit position))))
-          ;; (print (format (concat "num: %d\t"
-          ;;                        "pow: %d\t"
-          ;;                        "pos: %d\t"
-          ;;                        "dig: %d\t"
-          ;;                        "rem: %d\n\t"
-          ;;                        "(rev acc): %s")
-          ;;                num power position digit remainder (reverse acc)))
           ;; note the power decrements -- it has to --  so start with the
           ;; largest power
           (10-to-n-helper remainder base-n (1- power) (cons digit acc)))
