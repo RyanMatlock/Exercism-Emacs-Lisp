@@ -49,7 +49,7 @@ Note that
 
 (defun rebase (list-of-digits in-base out-base)
   "Convert LIST-OF-DIGITS from base IN-BASE to base OUT-BASE."
-  (error "Delete this S-Expression and write your own implementation"))
+  (base-10-to-base-n (base-n-to-base-10 list-of-digits in-base) out-base))
 
 (provide 'all-your-base)
 ;;; all-your-base.el ends here
