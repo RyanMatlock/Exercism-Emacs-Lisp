@@ -8,7 +8,7 @@
 (declare-function base-10-to-base-n "all-your-base.el" (base-10-num base-n))
 
 (ert-deftest base-10-to-base-2-42 ()
-  (should (equal '(1 0 1 0 1 0) (base-10-to-base-n (42 2)))))
+  (should (equal '(1 0 1 0 1 0) (base-10-to-base-n 42 2))))
 
 (provide 'all-your-base-more-tests)
 
