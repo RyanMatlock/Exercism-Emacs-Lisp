@@ -431,4 +431,47 @@ base-6 :facepalm::facepalm::facepalm:, so of course the identity wouldn't work.
 
 * Passing the =rebase= tests
 
+Failing tests:
 
+#+begin_example
+F empty-list
+  ...
+
+F multiple-zeros
+  ...
+
+F single-zero
+  ...
+#+end_example
+
+** =empty-list=
+
+#+begin_src emacs-lisp
+  (ert-deftest empty-list ()
+    (should (equal '(0) (rebase '() 2 10))))
+#+end_src
+
+This doesn't really make sense to me---shouldn't the empty list be an error
+instead? Whatever, I can pass it.
+
+#+begin_src emacs-lisp
+ELISP> (base-10-to-base-n 0 3)
+nil
+ELISP> (base-n-to-base-10 '() 3)
+0 (#o0, #x0, ?\C-@)
+#+end_src
+
+So I need to modify =base-10-to-base-n= to return ='(0)= instead of =nil= when
+passed =0=.
+
+#+begin_src emacs-lisp
+  (if (equal 0 base-10-num)
+      '(0)
+    (10-to-n-helper
+     base-10-num
+     base-n
+     (largest-power-of-n-in-base-10 base-10-num base-n)
+     '()))
+#+end_src
+
+Adding that actually passed all three tests for me.
