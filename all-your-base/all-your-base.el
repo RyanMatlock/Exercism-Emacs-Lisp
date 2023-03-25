@@ -11,7 +11,9 @@
         (let* ((digit (car digits))
                (power (1- (length digits)))
                (base-10 (* digit (expt base-n power))))
-          (n-to-10-helper (cdr digits) base-n (+ base-10 acc)))
+          (if (>= digit 0)
+              (n-to-10-helper (cdr digits) base-n (+ base-10 acc))
+            (error "Each element of DIGITS must be >= 0.")))
       acc))
   (n-to-10-helper digits base-n 0))
 
