@@ -48,3 +48,66 @@ First attempt that got horribly botched
       (apply #'+ accumulator)))
   (error "Delete this S-Expression and write your own implementation"))
 #+end_src
+
+* =base-n-to-base-10=
+
+#+begin_src emacs-lisp
+  (defun base-n-to-base-10 (digits base-n)
+    "Convert DIGITS from BASE-N to base 10 (output is a number)."
+    (defun n-to-10-helper (digits base-n acc)
+      (if digits
+          (let* ((digit (car digits))
+                 (power (1- (length digits)))
+                 (base-10 (* digit (expt base-n power))))
+            (print (format (concat "digit: %d\t"
+                                   "power: %d\t"
+                                   "base-10: %d\t"
+                                   "acc: %d")
+                           digit power base-10 acc))
+            (n-to-10-helper (cdr digits) base-n (+ base-10 acc))))
+      acc)
+    (n-to-10-helper digits base-n 0))
+#+end_src
+
+Not working, so let's dig into it:
+
+#+begin_src emacs-lisp
+  ELISP> (base-n-to-base-10 '(1 0 1 0 1 0) 2)
+
+  "digit: 1   power: 5    base-10: 32 acc: 0"
+
+  "digit: 0   power: 4    base-10: 0  acc: 32"
+
+  "digit: 1   power: 3    base-10: 8  acc: 32"
+
+  "digit: 0   power: 2    base-10: 0  acc: 40"
+
+  "digit: 1   power: 1    base-10: 2  acc: 40"
+
+  "digit: 0   power: 0    base-10: 0  acc: 42"
+
+  0 (#o0, #x0, ?\C-@)
+#+end_src
+
+So the 42 is in the accumulator, I just need to get it out.
+
+#+begin_src emacs-lisp
+(defun base-n-to-base-10 (digits base-n)
+  "Convert DIGITS from BASE-N to base 10 (output is a number)."
+  (defun n-to-10-helper (digits base-n acc)
+    (if digits
+        (let* ((digit (car digits))
+               (power (1- (length digits)))
+               (base-10 (* digit (expt base-n power))))
+          (print (format (concat "digit: %d\t"
+                                 "power: %d\t"
+                                 "base-10: %d\t"
+                                 "acc: %d")
+                         digit power base-10 acc))
+          (n-to-10-helper (cdr digits) base-n (+ base-10 acc)))
+      acc))
+  (n-to-10-helper digits base-n 0))
+#+end_src
+
+I just had the accumulator in the wrong place/at the wrong level of
+parentheses. The print statement really helped with the debugging!
