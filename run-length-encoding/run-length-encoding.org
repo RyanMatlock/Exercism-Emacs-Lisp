@@ -30,3 +30,257 @@ ELISP> (run-length-encode "foo")
 #+end_example
 
 Guess we'll have to start adding =print= statements to debug.
+
+#+begin_src emacs-lisp
+(defun run-length-encode (s)
+  "For string S consisting only of letters A-Z, a-z, and whitespace, replace
+repeated consecutive characters with the number of repetitions followed by the
+character."
+  (defun encode-helper (letters prev-letter count acc)
+    (let* ((letter (car letters))
+           (print-debug (lambda (label)
+                          (print
+                           (format (concat "%s\n\t"
+                                           "letter: %s\t"
+                                           "prev-letter: %s\t"
+                                           "count: %d\t"
+                                           "acc: %s")
+                                   label letter prev-letter count acc)))))
+      (cond ((string= letter prev-letter)
+             (funcall print-debug "string=:")
+             (encode-helper (cdr letters) letter (1+ count) acc))
+            ((> count 0)
+             (funcall print-debug "count > 0:")
+             (encode-helper
+              (cdr letters) letter 0 (cons (format "%d%s" letter count) acc)))
+            (letter
+             (funcall print-debug "letter not nil:")
+             (encode-helper (cdr letters) letter 0 (cons letter acc)))
+            (t
+             (funcall print-debug "out of letters")
+             (mapconcat #'string (reverse acc) "")))))
+  (let ((slist (mapcar #'string s)))
+    (encode-helper slist "" 0 '())))
+#+end_src
+
+#+begin_example
+ELISP> (run-length-encode "foo")
+
+"letter not nil:
+    letter: f   prev-letter:    count: 0    acc: nil"
+
+"letter not nil:
+    letter: o   prev-letter: f  count: 0    acc: (f)"
+
+"string=:
+    letter: o   prev-letter: o  count: 0    acc: (o f)"
+
+"count > 0:
+    letter: nil prev-letter: o  count: 1    acc: (o f)"
+
+​*** Eval error ***  Format specifier doesn’t match argument type
+#+end_example
+
+Well, I can see already that I need to start the count at 1 and update some of
+the logic accordingly.
+
+#+begin_src emacs-lisp
+  (defun run-length-encode (s)
+    "For string S consisting only of letters A-Z, a-z, and whitespace, replace
+  repeated consecutive characters with the number of repetitions followed by the
+  character."
+    (defun encode-helper (letters prev-letter count acc)
+      (let* ((min-count 1)
+             (letter (car letters))
+             (print-debug (lambda (label)
+                            (print
+                             (format (concat "%s\n\t"
+                                             "letter: %s\t"
+                                             "prev-letter: %s\t"
+                                             "count: %d\t"
+                                             "acc: %s")
+                                     label letter prev-letter count acc)))))
+        (cond ((string= letter prev-letter)
+               (funcall print-debug "string=:")
+               (encode-helper (cdr letters) letter (1+ count) acc))
+              ((> count min-count)
+               (funcall print-debug (format "count > %d:" min-count))
+               (encode-helper
+                (cdr letters)
+                letter
+                min-count
+                (cons (format "%d%s" letter count) acc)))
+              (letter
+               (funcall print-debug "letter not nil:")
+               (encode-helper (cdr letters) letter min-count (cons letter acc)))
+              (t
+               (funcall print-debug "out of letters")
+               (mapconcat #'string (reverse acc) "")))))
+    (let ((slist (mapcar #'string s)))
+      (encode-helper slist "" 1 '())))
+#+end_src
+
+Using =min-count= and =print-debug= actually helped me catch all the instances
+of magic numbers (although I still have one from where I call =encode-helper=
+at the bottom.
+
+#+begin_example
+ELISP> (run-length-encode "foo")
+
+"letter not nil:
+    letter: f   prev-letter:    count: 1    acc: nil"
+
+"letter not nil:
+    letter: o   prev-letter: f  count: 1    acc: (f)"
+
+"string=:
+    letter: o   prev-letter: o  count: 1    acc: (o f)"
+
+"count > 1:
+    letter: nil prev-letter: o  count: 2    acc: (o f)"
+
+​*** Eval error ***  Format specifier doesn’t match argument type
+#+end_example
+
+That actually points me to an easy bug in: =(format "%d%s" letter count)=: I
+got the order wrong.
+
+#+begin_example
+⋮
+"string=:
+    letter: nil prev-letter: nil    count: 268  acc: (2nil o f)"
+
+"string=:
+    letter: nil prev-letter: nil    count: 269  acc: (2nil o f)"
+
+"string=:
+    letter: nil prev-letter: nil    count: 270  acc: (2nil o f)"
+
+​*** Eval error ***  Lisp nesting exceeds ‘max-lisp-eval-depth’
+#+end_example
+
+So the count isn't getting reset as it should, so I'm getting stuck in a loop.
+
+Let's try this: =(cond ((and letter (string= letter prev-letter)) ...=
+
+#+begin_example
+ELISP> (run-length-encode "foo")
+
+"letter not nil:
+    letter: f   prev-letter:    count: 1    acc: nil"
+
+"letter not nil:
+    letter: o   prev-letter: f  count: 1    acc: (f)"
+
+"string=:
+    letter: o   prev-letter: o  count: 1    acc: (o f)"
+
+"count > 1:
+    letter: nil prev-letter: o  count: 2    acc: (o f)"
+
+"out of letters
+    letter: nil prev-letter: nil    count: 1    acc: (2nil o f)"
+
+​*** Eval error ***  Wrong type argument: characterp, "f"
+#+end_example
+
+Oh, I should be adding =prev-letter=, not =letter= when I'm =cons=​ing on a
+repeated letter to the accumulator.
+
+#+begin_src emacs-lisp
+  (defun run-length-encode (s)
+    "For string S consisting only of letters A-Z, a-z, and whitespace, replace
+  repeated consecutive characters with the number of repetitions followed by the
+  character."
+    (defun encode-helper (letters prev-letter count acc)
+      (let* ((min-count 1)
+             (letter (car letters))
+             (print-debug (lambda (label)
+                            (print
+                             (format (concat "%s\n\t"
+                                             "letter: %s\t"
+                                             "prev-letter: %s\t"
+                                             "count: %d\t"
+                                             "acc: %s")
+                                     label letter prev-letter count acc)))))
+        (cond ((and letter (string= letter prev-letter))
+               (funcall print-debug "string=:")
+               (encode-helper (cdr letters) letter (1+ count) acc))
+              ((> count min-count)
+               (funcall print-debug (format "count > %d:" min-count))
+               (encode-helper
+                (cdr letters)
+                letter
+                min-count
+                (cons (format "%d%s" count prev-letter) acc)))
+              (letter
+               (funcall print-debug "letter not nil:")
+               (encode-helper (cdr letters) letter min-count (cons letter acc)))
+              (t
+               (funcall print-debug "out of letters")
+               (mapconcat #'string (reverse acc) "")))))
+    (let ((slist (mapcar #'string s)))
+      (encode-helper slist "" 1 '())))
+#+end_src
+
+#+begin_example
+ELISP> (run-length-encode "foo")
+
+"letter not nil:
+    letter: f   prev-letter:    count: 1    acc: nil"
+
+"letter not nil:
+    letter: o   prev-letter: f  count: 1    acc: (f)"
+
+"string=:
+    letter: o   prev-letter: o  count: 1    acc: (o f)"
+
+"count > 1:
+    letter: nil prev-letter: o  count: 2    acc: (o f)"
+
+"out of letters
+    letter: nil prev-letter: nil    count: 1    acc: (2o o f)"
+
+​*** Eval error ***  Wrong type argument: characterp, "f"
+#+end_example
+
+Ok, I shouldn't =cons= =letter= onto =acc= when letter is not nil; instead, I
+should =cons= =prev-letter= onto =acc= (if it's not =nil=). (I need my
+accumulator to look like ='("2o" "f")= for input =foo=.
+
+#+begin_src emacs-lisp
+ELISP> (mapconcat #'string (reverse '("2o" "f")) "")
+​*** Eval error ***  Wrong type argument: characterp, "f"
+#+end_src
+
+Ok, so that's where my error is coming from.
+
+#+begin_src emacs-lisp
+ELISP> (mapconcat #'identity (reverse '("2o" "f")) "")
+"f2o"
+#+end_src
+
+Ok, that's a good catch.
+
+#+begin_example
+ELISP> (run-length-encode "foo")
+
+"letter not nil:
+    letter: f   prev-letter:    count: 1    acc: nil"
+
+"letter not nil:
+    letter: o   prev-letter: f  count: 1    acc: (f)"
+
+"string=:
+    letter: o   prev-letter: o  count: 1    acc: (o f)"
+
+"count > 1:
+    letter: nil prev-letter: o  count: 2    acc: (o f)"
+
+"out of letters
+    letter: nil prev-letter: nil    count: 1    acc: (2o o f)"
+
+"fo2o"
+#+end_example
+
+Getting pretty close!
