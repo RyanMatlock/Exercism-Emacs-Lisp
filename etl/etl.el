@@ -5,7 +5,7 @@
 ;;; hash table. Note that the letters in the input are mixed case.
 
 (defun etl (data)
-  "Translate hash table data, where keys are points and the values are lists of
+  "Translate hash table DATA, where keys are points and the values are lists of
 mixed case letters to a hash table where keys are lowercase letters and values
 are points."
   (let ((newdata (make-hash-table :test #'equal)))
