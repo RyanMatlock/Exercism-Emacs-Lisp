@@ -11,8 +11,8 @@
 (defun factorp (num divisor)
   "Return T if DIVISOR is a factor of NUM; otherwise return NIL; error if
 DIVISOR is 0."
-  (cond ((equal 0 divisor) (error "DIVISOR cannot be 0."))
-        (t (equal 0 (mod num divisor)))))
+  (cond ((zerop divisor) (error "DIVISOR cannot be 0."))
+        (t (zerop (mod num divisor)))))
 
 (defun convert (n)
   "Convert integer N to its raindrops string."
