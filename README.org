@@ -1,3 +1,11 @@
-These are my solutions to [[https://exercism.org/][Exercism]]'s Emacs Lisp exercises. In order to
-facilitate future reference, I've kept some dead code, and IELM REPL results in
-the main branch instead of buried in the commit history.
+These are my solutions to [[https://exercism.org/][Exercism]]'s [[https://exercism.org/tracks/emacs-lisp/exercises][Emacs Lisp exercises]]. For ease of future
+reference, I've kept some dead code and IELM REPL activity in the main branch
+instead of buried in the commit history. In more recent exercises, I've tried
+to separate these false starts, sanity checks, bugs, and commentary into Org
+files, which probably do more to showcase my ignorance than my knowledge and
+skill. Essentially, they're there if you want to see how the sausage gets
+made.
+
+In terms of the quality of the code, it probably ranges from acceptable to
+amateurish to nightmarish depending on the exercise, but I'm working through
+these in order to learn, improve, and [[https://xkcd.com/297/][practice the Lisp arts]].
