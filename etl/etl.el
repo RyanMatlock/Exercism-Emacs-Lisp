@@ -9,18 +9,15 @@
 mixed case letters to a hash table where keys are lowercase letters and values
 are points."
   (let ((newdata (make-hash-table :test #'equal)))
-    (defun swap-key-value (key values)
-      "Apply to data with maphash"
-      (let ((value (car values)))
-        ;; it's weird writing impure code like this
-        (cond ((and value (char-or-string-p value))
-               (progn (puthash (downcase value) key newdata)
-                      (swap-key-value key (cdr values))))
-              (value (error "New keys must be chars/strings."))
-              (t nil)))
-      (if (< key 0)
-          (error "Keys should be non-negative.")
-        (swap-key-value key values)))
+    (defun swap-key-value (key raw-values)
+      "Swap KEY with each VALUE in VALUES and add to NEWDATA using
+PUTHASH. Ensure each VALUE is a lowercase string or char."
+      (cond ((< key 0) (error "KEY must be non-negative."))
+            ((seq-every-p #'stringp raw-values)
+             (let ((values (mapcar #'downcase raw-values)))
+               ;; (print (format "key: %d\tvalues: %s" key values))
+               (mapcar #'(lambda (val) (puthash val key newdata)) values)))
+            (t (error "Each VALUE must be a string."))))
     (maphash #'swap-key-value data)
     newdata))
 
