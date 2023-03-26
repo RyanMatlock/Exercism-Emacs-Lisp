@@ -20,7 +20,7 @@ are points."
               (t nil)))
       (if (< k 0)
           (error "Keys should be non-negative.")
-        (swap-kv-helper k vs)))
+        (swap-kv k vs)))
     (maphash #'swap-kv data)
     newdata))
 
