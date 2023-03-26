@@ -41,6 +41,285 @@ F mixed-case-test
     (error "Lisp nesting exceeds ‘max-lisp-eval-depth’")
 #+end_example
 
+Updated =etl= to include some debugging print statements:
+
+#+begin_src emacs-lisp
+  (defun etl (data)
+    "Translate hash table DATA, where keys are points and the values are lists of
+  mixed case letters to a hash table where keys are lowercase letters and values
+  are points."
+    (let ((newdata (make-hash-table :test #'equal)))
+      (defun swap-key-value (key values)
+        "Apply to data with maphash"
+        (let ((value (car values)))
+          ;; it's weird writing impure code like this
+          (cond ((and value (char-or-string-p value))
+                 (print (format (concat "key: %d\t"
+                                        "value: %s\t"
+                                        "(cdr values): %s")
+                                key (downcase value) (cdr values)))
+                 (progn (puthash (downcase value) key newdata)
+                        (swap-key-value key (cdr values))))
+                (value (error "New keys must be chars/strings."))
+                (t nil)))
+        (if (< key 0)
+            (error "Keys should be non-negative.")
+          (swap-key-value key values)))
+      (maphash #'swap-key-value data)
+      newdata))
+#+end_src
+
+#+begin_example
+ELISP> (etl mixed-case-input)
+
+"key: 1 value: a    (cdr values): (E I o U L N r s T)"
+
+"key: 1 value: e    (cdr values): (I o U L N r s T)"
+
+"key: 1 value: i    (cdr values): (o U L N r s T)"
+
+"key: 1 value: o    (cdr values): (U L N r s T)"
+
+"key: 1 value: u    (cdr values): (L N r s T)"
+
+"key: 1 value: l    (cdr values): (N r s T)"
+
+"key: 1 value: n    (cdr values): (r s T)"
+
+"key: 1 value: r    (cdr values): (s T)"
+
+"key: 1 value: s    (cdr values): (T)"
+
+"key: 1 value: t    (cdr values): nil"
+
+​*** Eval error ***  Lisp nesting exceeds ‘max-lisp-eval-depth’
+#+end_example
+
+So it looks like I'm not returning from swapping in the right place.
+
+While I'm at it, let's just =(mapcar #'downcase values)= from the
+start. Actually, this doesn't seem to be working:
+
+#+begin_src emacs-lisp
+  (if (< key 0)
+      (error "Keys should be non-negative.")
+    (swap-key-value key (mapcar #'downcase values)))
+#+end_src
+
+which still gives me:
+
+#+begin_example
+ELISP> (etl mixed-case-input)
+
+"key: 1 value: a    (cdr values): (E I o U L N r s T)"
+
+"key: 1 value: E    (cdr values): (I o U L N r s T)"
+
+"key: 1 value: I    (cdr values): (o U L N r s T)"
+
+"key: 1 value: o    (cdr values): (U L N r s T)"
+
+"key: 1 value: U    (cdr values): (L N r s T)"
+
+"key: 1 value: L    (cdr values): (N r s T)"
+
+"key: 1 value: N    (cdr values): (r s T)"
+
+"key: 1 value: r    (cdr values): (s T)"
+
+"key: 1 value: s    (cdr values): (T)"
+
+"key: 1 value: T    (cdr values): nil"
+
+
+​*** Eval error ***  Lisp nesting exceeds ‘max-lisp-eval-depth’
+#+end_example
+
+Ok, let's try this again:
+
+#+begin_src emacs-lisp
+(defun etl (data)
+  "Translate hash table DATA, where keys are points and the values are lists of
+mixed case letters to a hash table where keys are lowercase letters and values
+are points."
+  (let ((newdata (make-hash-table :test #'equal)))
+    (defun swap-key-value (key values)
+      "Apply to data with maphash"
+      (let ((value (car values)))
+        ;; it's weird writing impure code like this
+        (cond ((and value (char-or-string-p value))
+               (progn
+                 (print (format (concat "key: %d\t"
+                                        "value: %s\t"
+                                        "(cdr values): %s")
+                                key value (cdr values)))
+                 (puthash value key newdata)
+                 (swap-key-value key (cdr values))))
+              (value (error "New keys must be chars/strings."))
+              ;; this should return, no?
+              (t (progn
+                   (print "Reached the end of value")
+                   nil))))
+      (if (< key 0)
+          (error "Keys should be non-negative.")
+        (swap-key-value key (mapcar #'downcase values))))
+    (maphash #'swap-key-value data)
+    newdata))
+#+end_src
+
+This just returns an endless list of
+
+#+begin_example
+⋮
+
+"Reached the end of value"
+
+"Reached the end of value"
+
+"Reached the end of value"
+
+​*** Eval error ***  Lisp nesting exceeds ‘max-lisp-eval-depth’
+#+end_example
+
+So it looks like the smart thing to do is map a function onto values.
+
+Here's how it's looking so far:
+
+#+begin_src emacs-lisp
+(defun etl (data)
+  "Translate hash table DATA, where keys are points and the values are lists of
+mixed case letters to a hash table where keys are lowercase letters and values
+are points."
+  (let ((newdata (make-hash-table :test #'equal)))
+    (defun swap-key-value (key raw-values)
+      "Swap KEY with each VALUE in VALUES and add to NEWDATA using
+PUTHASH. Ensure each VALUE is a lowercase string or char."
+      ;; error checking
+      (cond ((not
+              (length= raw-values
+                       (length (seq-filter #'char-or-string-p raw-values))))
+             (error "Values must be chars or strings."))
+            (t (let ((values (mapcar #'downcase raw-values)))
+                 (print (format "key: %d\tvalues: %s" key values)))))
+      ;; (let ((value (car values)))
+      ;;   ;; it's weird writing impure code like this
+      ;;   (cond ((and value (char-or-string-p value))
+      ;;          (progn
+      ;;            (print (format (concat "key: %d\t"
+      ;;                                   "value: %s\t"
+      ;;                                   "(cdr values): %s")
+      ;;                           key value (cdr values)))
+      ;;            (puthash value key newdata)
+      ;;            (swap-key-value key (cdr values))))
+      ;;         (value (error "New keys must be chars/strings."))
+      ;;         ;; this should return, no?
+      ;;         (t (progn
+      ;;              (print "Reached the end of value")
+      ;;              nil))))
+      ;; (if (< key 0)
+      ;;     (error "Keys should be non-negative.")
+      ;;   (swap-key-value key (mapcar #'downcase values)))
+
+      )
+    (maphash #'swap-key-value data)
+    newdata))
+#+end_src
+
+#+begin_example
+ELISP> (etl mixed-case-input)
+
+"key: 1 values: (a e i o u l n r s t)"
+
+"key: 2 values: (d g)"
+
+"key: 3 values: (b c m p)"
+
+"key: 4 values: (f h v w y)"
+
+"key: 5 values: (k)"
+
+"key: 8 values: (j x)"
+
+"key: 10    values: (q z)"
+
+#<hash-table equal 0/65 0x1feff47338ed>
+#+end_example
+
+This seems pretty good---except you should be using =seq-every-p= instead of
+trying to roll your own.
+
+#+begin_src emacs-lisp
+  (cond ((seq-every-p #'char-or-string-p raw-values)
+         (let ((values (mapcar #'downcase raw-values)))
+             (print (format "key: %d\tvalues: %s" key values))))
+        (t (error "Values must be chars or strings.")))
+#+end_src
+
+Much better!
+
+#+begin_example
+ELISP> (print (etl mixed-case-input))
+
+#s(hash-table size 65 test equal rehash-size 1.5 rehash-threshold 0.8125 data
+("a" 1 "e" 1 "i" 1 "o" 1 "u" 1 "l" 1 "n" 1 "r" 1 "s" 1 "t" 1 "d" 2 "g" 2 "b" 3
+"c" 3 "m" 3 "p" 3 "f" 4 "h" 4 "v" 4 "w" 4 "y" 4 "k" 5 "j" 8 "x" 8 "q" 10 "z"
+10))
+
+#<hash-table equal 26/65 0x1fefdcc4beb5>
+#+end_example
+
+I think I've got it.
+
+#+begin_src emacs-lisp
+  (defun etl (data)
+    "Translate hash table DATA, where keys are points and the values are lists of
+  mixed case letters to a hash table where keys are lowercase letters and values
+  are points."
+    (let ((newdata (make-hash-table :test #'equal)))
+      (defun swap-key-value (key raw-values)
+        "Swap KEY with each VALUE in VALUES and add to NEWDATA using
+  PUTHASH. Ensure each VALUE is a lowercase string or char."
+        (cond ((< key 0) (error "KEY must be non-negative."))
+              ((seq-every-p #'char-or-string-p raw-values)
+               (let ((values (mapcar #'downcase raw-values)))
+                 ;; (print (format "key: %d\tvalues: %s" key values))
+                 (mapcar #'(lambda (val) (puthash val key newdata)) values)))
+              (t (error "Each VALUE must be a char or string."))))
+      (maphash #'swap-key-value data)
+      newdata))
+#+end_src
+
+Almost.
+
+#+begin_example
+Selector: t
+Passed:  3
+Failed:  1 (1 unexpected)
+Skipped: 0
+Total:   4/4
+
+Started at:   2023-03-26 11:45:45-0700
+Finished.
+Finished at:  2023-03-26 11:45:45-0700
+
+.F..
+
+F list-of-non-string-values-test
+    (ert-test-failed
+     ((should-error
+       (etl listof-chars-input))
+      :form
+      (etl #s(hash-table size 65 test eql rehash-size 1.5 rehash-threshold 0.8125 data
+                         (1
+                          (78 114 113))))
+      :value #s(hash-table size 65 test equal rehash-size 1.5 rehash-threshold 0.8125 data
+                           (110 1 114 1 113 1))
+      :fail-reason "did not signal an error"))
+
+#+end_example
+
+Maybe swap =stringp= for =char-or-stringp=? Yep, that worked. All tests pass!
+
 * Appendix: all the old comments/info from =etl.el=
 ** Top of =etl.el=
 can't figure out why this is passing tests locally but not on Exercism see
