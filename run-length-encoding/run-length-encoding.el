@@ -7,16 +7,34 @@
 repeated consecutive characters with the number of repetitions followed by the
 character."
   (defun encode-helper (letters prev-letter count acc)
-    (let ((letter (car letters)))
-      (cond ((string= letter prev-letter)
+    (let* ((min-count 1)
+           (letter (car letters))
+           (print-debug (lambda (label)
+                          (print
+                           (format (concat "%s\n\t"
+                                           "letter: %s\t"
+                                           "prev-letter: %s\t"
+                                           "count: %d\t"
+                                           "acc: %s")
+                                   label letter prev-letter count acc)))))
+      (cond ((and letter (string= letter prev-letter))
+             (funcall print-debug "string=:")
              (encode-helper (cdr letters) letter (1+ count) acc))
-            ((> count 0)
+            ((> count min-count)
+             (funcall print-debug (format "count > %d:" min-count))
              (encode-helper
-              (cdr letters) letter 0 (cons (format "%d%s" letter count) acc)))
-            (letter (encode-helper (cdr letters) letter 0 (cons letter acc)))
-            (t (mapconcat #'string (reverse acc) "")))))
+              (cdr letters)
+              letter
+              min-count
+              (cons (format "%d%s" count prev-letter) acc)))
+            (letter
+             (funcall print-debug "letter not nil:")
+             (encode-helper (cdr letters) letter min-count (cons letter acc)))
+            (t
+             (funcall print-debug "out of letters")
+             (mapconcat #'identity (reverse acc) "")))))
   (let ((slist (mapcar #'string s)))
-    (encode-helper slist "" 0 '())))
+    (encode-helper slist "" 1 '())))
 
 (defun run-length-decode (s)
 ;;; Code:
