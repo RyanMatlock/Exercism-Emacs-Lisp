@@ -10,5 +10,5 @@
 (ert-deftest factorp-is-a-factor ()
   (should (equal t (factorp 9 3))))
 
-(provide 'raindrops-more-test)
+(provide 'raindrops-more-tests)
 
