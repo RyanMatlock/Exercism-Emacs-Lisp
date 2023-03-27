@@ -411,3 +411,13 @@ ELISP> (run-length-encode "foo")
 
 The "right" answer but an extra =nil= hanging out at the start of the list. The
 new way is more complicated but "more correct."
+
+#+begin_quote
+Aside: the =print-debug= thing you did was actually pretty cool. There's
+probably a more formal way of doing it a la Python's [[https://docs.python.org/3/howto/logging.html][logging]] library, so look
+into it.
+
+[[https://stackoverflow.com/questions/3257480/how-to-debug-elisp][How to debug elisp? | stackoverflow]] has some info on using [[https://www.gnu.org/software/emacs/manual/html_node/eintr/edebug.html][edebug]], although
+it's not really the same. The Emacs Lisp manual's section on [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Debugging.html][debugging]] also
+looks like required reading.
+#+end_quote
