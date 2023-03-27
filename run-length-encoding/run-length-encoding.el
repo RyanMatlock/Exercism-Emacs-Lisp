@@ -27,12 +27,20 @@ character."
               letter
               min-count
               (cons (format "%d%s" count prev-letter) acc)))
+            ((and letter (not (string= "" prev-letter)))
+             (funcall print-debug "letter not nil and prev-letter not '':")
+             (encode-helper
+              (cdr letters)
+              letter
+              min-count
+              (cons prev-letter acc)))
             (letter
-             (funcall print-debug "letter not nil:")
-             (encode-helper (cdr letters) letter min-count (cons letter acc)))
+             (funcall print-debug "letter not nil")
+             (encode-helper (cdr letters) letter min-count acc))
             (t
              (funcall print-debug "out of letters")
-             (mapconcat #'identity (reverse acc) "")))))
+             ;; you need to stick the last letter on at the end
+             (mapconcat #'identity (reverse (cons prev-letter acc)) "")))))
   (let ((slist (mapcar #'string s)))
     (encode-helper slist "" 1 '())))
 
