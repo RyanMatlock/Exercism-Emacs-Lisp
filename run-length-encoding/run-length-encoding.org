@@ -1,3 +1,4 @@
+#+options: ':t
 #+title: Run Length Encoding (RLE)
 
 * =run-length-encode=
@@ -284,3 +285,129 @@ ELISP> (run-length-encode "foo")
 #+end_example
 
 Getting pretty close!
+
+Ok, I actually needed an additional condition:
+
+#+begin_src emacs-lisp
+  (defun run-length-encode (s)
+    "For string S consisting only of letters A-Z, a-z, and whitespace, replace
+  repeated consecutive characters with the number of repetitions followed by the
+  character."
+    (defun encode-helper (letters prev-letter count acc)
+      (let* ((min-count 1)
+             (letter (car letters))
+             (print-debug (lambda (label)
+                            (print
+                             (format (concat "%s\n\t"
+                                             "letter: %s\t"
+                                             "prev-letter: %s\t"
+                                             "count: %d\t"
+                                             "acc: %s")
+                                     label letter prev-letter count acc)))))
+        (cond ((and letter (string= letter prev-letter))
+               (funcall print-debug "string=:")
+               (encode-helper (cdr letters) letter (1+ count) acc))
+              ((> count min-count)
+               (funcall print-debug (format "count > %d:" min-count))
+               (encode-helper
+                (cdr letters)
+                letter
+                min-count
+                (cons (format "%d%s" count prev-letter) acc)))
+              ((and letter (not (string= "" prev-letter)))
+               (funcall print-debug "letter not nil and prev-letter not '':")
+               (encode-helper
+                (cdr letters)
+                letter
+                min-count
+                (cons prev-letter acc)))
+              (letter
+               (funcall print-debug "letter not nil")
+               (encode-helper (cdr letters) letter min-count acc))
+              (t
+               (funcall print-debug "out of letters")
+               ;; you need to stick the last letter on at the end
+               (mapconcat #'identity (reverse (cons prev-letter acc)) "")))))
+    (let ((slist (mapcar #'string s)))
+      (encode-helper slist "" 1 '())))
+#+end_src
+
+#+begin_example
+ELISP> (run-length-encode "foo")
+
+"letter not nil
+    letter: f   prev-letter:    count: 1    acc: nil"
+
+"letter not nil and prev-letter not '':
+    letter: o   prev-letter: f  count: 1    acc: nil"
+
+"string=:
+    letter: o   prev-letter: o  count: 1    acc: (f)"
+
+"count > 1:
+    letter: nil prev-letter: o  count: 2    acc: (f)"
+
+"out of letters
+    letter: nil prev-letter: nil    count: 1    acc: (2o f)"
+
+"f2o"
+ELISP> (run-length-encode "baaar")
+
+"letter not nil
+    letter: b   prev-letter:    count: 1    acc: nil"
+
+"letter not nil and prev-letter not '':
+    letter: a   prev-letter: b  count: 1    acc: nil"
+
+"string=:
+    letter: a   prev-letter: a  count: 1    acc: (b)"
+
+"string=:
+    letter: a   prev-letter: a  count: 2    acc: (b)"
+
+"count > 1:
+    letter: r   prev-letter: a  count: 3    acc: (b)"
+
+"out of letters
+    letter: nil prev-letter: r  count: 1    acc: (3a b)"
+
+"b3ar"
+#+end_example
+
+I could've gotten away with
+
+#+begin_src emacs-lisp
+  (letter
+   (funcall print-debug "letter not nil")
+   (encode-helper
+    (cdr letters)
+    letter min-count
+    (cons prev-letter acc)))
+#+end_src
+
+only (without the ~(and letter (not (string= "" prev-letter)))~ condition), but
+it led to
+
+#+begin_example
+ELISP> (run-length-encode "foo")
+
+"letter not nil:
+    letter: f   prev-letter:    count: 1    acc: nil"
+
+"letter not nil:
+    letter: o   prev-letter: f  count: 1    acc: ()"
+
+"string=:
+    letter: o   prev-letter: o  count: 1    acc: (f )"
+
+"count > 1:
+    letter: nil prev-letter: o  count: 2    acc: (f )"
+
+"out of letters
+    letter: nil prev-letter: nil    count: 1    acc: (2o f )"
+
+"f2o"
+#+end_example
+
+The "right" answer but an extra =nil= hanging out at the start of the list. The
+new way is more complicated but "more correct."
