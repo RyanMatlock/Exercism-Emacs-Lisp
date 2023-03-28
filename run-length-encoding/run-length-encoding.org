@@ -421,3 +421,48 @@ into it.
 it's not really the same. The Emacs Lisp manual's section on [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Debugging.html][debugging]] also
 looks like required reading.
 #+end_quote
+
+* =run-length-decode=
+
+#+begin_src emacs-lisp
+ELISP> (mapcar #'string "b3ar")
+("b" "3" "a" "r")
+ELISP> (mapcar #'string-to-number (mapcar #'string "b3ar"))
+(0 3 0 0)
+#+end_src
+
+Maybe just check if a character is a digit without using =string-to-number=
+until the digits have been gathered?
+
+#+begin_quote
+Aside: this is pretty slick:
+
+#+begin_src emacs-lisp
+  (defun str-digit-p (str)
+    "Return T if STR is a digit (i.e. a character in the range 0-9); otherwise,
+  return NIL."
+    (defun string=-digit (digit)
+      (string= str digit))
+    (let ((str-digits '("0" "1" "2" "3" "4" "5" "6" "7" "8" "9")))
+      (seq-some #'string=-digit str-digits)))
+#+end_src
+
+So are the tests:
+
+#+begin_src emacs-lisp
+(ert-deftest str-digit-p-letters ()
+  (let* ((uppercase (mapcar #'string (number-sequence ?A ?Z)))
+         (lowercase (mapcar #'string (number-sequence ?a ?z)))
+         (letters (append uppercase lowercase)))
+    (should (equal nil (seq-every-p #'str-digit-p letters)))))
+
+(ert-deftest str-digit-p-digits ()
+  (let ((digits (mapcar #'string (number-sequence ?0 ?9))))
+    (should (equal t (seq-every-p #'str-digit-p digits)))))
+#+end_src
+
+The only issue with the testing is that if it fails, you don't know which
+elements it's failed on because of =seq-every-p=, so maybe it's bad practice or
+there's another way of doing it. If there isn't, maybe you should consider
+writing an extension to ERT that allows for parametrized unit testing.
+#+end_quote
