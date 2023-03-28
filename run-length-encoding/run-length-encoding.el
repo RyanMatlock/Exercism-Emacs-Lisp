@@ -31,6 +31,14 @@ character."
   (let ((slist (mapcar #'string s)))
     (encode-helper slist "" 1 '())))
 
+(defun str-digit-p (str)
+  "Return T if STR is a digit (i.e. a character in the range 0-9); otherwise,
+return NIL."
+  (defun string=-digit (digit)
+    (string= str digit))
+  (let ((str-digits '("0" "1" "2" "3" "4" "5" "6" "7" "8" "9")))
+    (seq-some #'string=-digit str-digits)))
+
 (defun run-length-decode (s)
 ;;; Code:
 )
