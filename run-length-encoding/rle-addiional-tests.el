@@ -1,6 +1,8 @@
 (load-file "run-length-encoding.el")
 (declare-function str-digit-p "run-length-encoding.el" (str))
 
+;; still not sure why this isn't working, especially since I think I did
+;; something like this in an earlier project
 ;; (let ((uppercase (mapcar #'string (number-sequence ?A ?Z)))
 ;;       (lowercase (mapcar #'string (number-sequence ?a ?z)))
 ;;       (digits (mapcar #'string (number-sequence ?0 ?9)))
