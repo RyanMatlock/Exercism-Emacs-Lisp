@@ -466,3 +466,34 @@ elements it's failed on because of =seq-every-p=, so maybe it's bad practice or
 there's another way of doing it. If there isn't, maybe you should consider
 writing an extension to ERT that allows for parametrized unit testing.
 #+end_quote
+
+** =let= outside of =ert-deftest= failing
+In =sublist-additional-testing.el=, I had
+
+#+begin_src emacs-lisp
+  (let ((longer '(:foo :bar :baz))
+        (shorter '(:foo :bar)))
+    (ert-deftest unequal-lengths-should-error-smaller-list-first ()
+      (should-error (compare-equal-length-lists shorter longer)))
+
+    (ert-deftest unequal-lengths-should-error-larger-list-first ()
+      (should-error (compare-equal-length-lists longer shorter))))
+#+end_src
+
+which worked. However, in =rle-additional-tests.el=, I have
+
+#+begin_src emacs-lisp
+  (let* ((uppercase-letters (mapcar #'string (number-sequence ?A ?Z)))
+         (lowercase-letters (mapcar #'string (number-sequence ?a ?z)))
+         (ascii-letters (append uppercase-letters lowercase-letters))
+         (digits (mapcar #'string (number-sequence ?0 ?9))))
+    (ert-deftest str-digit-p-ascii-letters ()
+      (should (equal nil (seq-every-p #'str-digit-p ascii-letters))))
+    (ert-deftest str-digit-p-str-digits ()
+      (should (equal t (seq-every-p #'str-digit-p digits)))))
+#+end_src
+
+Which looks to be the essentially the same, but it isn't. Actually, I think I
+see what the issue is: the "working" code raises an error, but it's supposed
+to, so even though it raises the wrong error, it passes the test. I guess I'll
+put a pin in this for now, but I should consider returning to it later.
