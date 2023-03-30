@@ -15,6 +15,13 @@
          (append '(" ") (mapcar #'string (number-sequence ?0 ?9)))))
     (seq-some #'(lambda (char) (string= char (string c))) valid-chars)))
 
+(defun remove-all-spaces (str)
+  "Remove all spaces from string STR."
+  (let ((space-char (string-to-char " ")))
+    (mapconcat #'string
+               (seq-filter #'(lambda (char) (not (equal space-char char))) str)
+               "")))
+
 (defun luhn-p (str)
   "Apply Luhn algorithm to STR: double every other number; if the result is
 greater than 9, subtract 9; sum the resulting list, and if the sum is evenly
