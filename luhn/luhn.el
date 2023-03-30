@@ -13,7 +13,8 @@
   "Apply Luhn algorithm to STR: double every other number; if the result is
 greater than 9, subtract 9; sum the resulting list, and if the sum is evenly
 divisible by 10, return T; otherwise, return NIL."
-  (let ((luhn-max 9)
+  (let ((min-length 1)
+        (luhn-max 9)
         (luhn-mult 2)
         (digits
          (reverse (mapcar #'string-to-number-or-error
@@ -33,6 +34,7 @@ divisible by 10, return T; otherwise, return NIL."
               (t acc))))
     ;; (print (format "digits: %s" digits))
     (and digits
+         (> (length digits) min-length)
          (zerop (mod (apply #'+ (luhn-helper digits nil '())) luhn-divisor)))))
 
 (provide 'luhn)
