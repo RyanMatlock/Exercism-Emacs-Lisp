@@ -16,6 +16,9 @@
   (let ((punctuation-list '("!" "@" "#" "&" ")" "<")))
     (should (equal nil (seq-every-p #'str-digit-p punctuation-list)))))
 
+(ert-deftest str-digit-p-nil ()
+  (should (equal nil (str-digit-p '()))))
+
 (ert-deftest repeat-str-less-than-zero-error ()
   (should-error (repeat-str -1 "foo")))
 
