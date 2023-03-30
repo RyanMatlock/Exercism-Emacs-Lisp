@@ -173,3 +173,89 @@ when I should have been writing
 
 when a function returns =t= or =nil=.
 #+end_quote
+
+Anyway, time to fix =luhn-p= version 1.
+
+#+begin_src emacs-lisp
+  (defun luhn-p (str)
+    "Apply Luhn algorithm to STR: double every other number; if the result is
+  greater than 9, subtract 9; sum the resulting list, and if the sum is evenly
+  divisible by 10, return T; otherwise, return NIL."
+    (let ((digits
+           (mapcar #'string-to-number
+                   (seq-filter
+                    #'(lambda (s) (not (string= " " s)))
+                    (mapcar #'string str))))
+          (luhn-divisor 10))
+      (defun luhn-helper (digits double-p acc)
+        (let ((digit (car digits)))
+          (cond ((and digit double-p)
+                 (let* ((luhn-max 9)
+                        (luhn-mult 2)
+                        (luhn-intermediate-result (* digit luhn-mult))
+                        (luhn-result (if (> luhn-intermediate-result luhn-max)
+                                         (- luhn-intermediate-result luhn-max)
+                                       luhn-intermediate-result)))
+                   (luhn-helper (cdr digits) nil (cons luhn-result acc))))
+                (digit (luhn-helper (cdr digits) t (cons digit acc)))
+                (t acc))))
+      (print (format "digits: %s" digits))
+      (zerop (mod (apply #'+ (luhn-helper digits t '())) luhn-divisor))))
+#+end_src
+
+I was having an issue where I was performing numerical operations on =nil=, so
+I had to move the Luhn-related number until later.
+
+#+begin_src emacs-lisp
+  (defun luhn-p (str)
+    "Apply Luhn algorithm to STR: double every other number; if the result is
+  greater than 9, subtract 9; sum the resulting list, and if the sum is evenly
+  divisible by 10, return T; otherwise, return NIL."
+    (let ((luhn-max 9)
+          (luhn-mult 2)
+          (digits
+           (mapcar #'string-to-number
+                   (seq-filter
+                    #'(lambda (s) (not (string= " " s)))
+                    (mapcar #'string str))))
+          (luhn-divisor 10))
+      (defun luhn-helper (digits double-p acc)
+        (let ((digit (car digits)))
+          (cond ((and digit double-p)
+                 (let* ((luhn-intermediate-result (* digit luhn-mult))
+                        (luhn-result (if (> luhn-intermediate-result luhn-max)
+                                         (- luhn-intermediate-result luhn-max)
+                                       luhn-intermediate-result)))
+                   (luhn-helper (cdr digits) nil (cons luhn-result acc))))
+                (digit (luhn-helper (cdr digits) t (cons digit acc)))
+                (t acc))))
+      (print (format "digits: %s" digits))
+      (zerop (mod (apply #'+ (luhn-helper digits t '())) luhn-divisor))))
+#+end_src
+
+Totally arbitary, but I like this order better.
+
+Still having issues though; here's one of them:
+
+#+begin_example
+  ELISP> (luhn-p "")
+
+  "digits: nil"
+
+  t
+  ELISP> (luhn-p "0   ")
+
+  "digits: (0)"
+
+  t
+  ELISP> (luhn-p "   ")
+
+  "digits: nil"
+#+end_example
+
+It's happening because
+
+#+begin_src emacs-lisp
+  ELISP> (apply #'+ nil)
+  0 (#o0, #x0, ?\C-@)
+#+end_src
