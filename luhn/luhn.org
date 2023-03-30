@@ -532,3 +532,23 @@ Should've read more carefully, there's also this: "Strings of length 1 or less
 are not valid. Spaces are allowed in the input, but they should be stripped
 before checking. All other non-digit characters are disallowed."
 
+* Refactoring
+
+Checking for valid characters:
+
+#+begin_src emacs-lisp
+  (defun valid-luhn-char-p (c)
+    "For char C, return T if it is a digit or space; otherwise, return NIL."
+    (let ((valid-chars
+           (append '(" ") (mapcar #'string (number-sequence ?0 ?9)))))
+      (seq-some #'(lambda (char) (string= char (string c))) valid-chars)))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (valid-luhn-char-p ?0)
+  t
+  ELISP> (valid-luhn-char-p ?A)
+  nil
+  ELISP> (valid-luhn-char-p (string-to-char " "))
+  t
+#+end_src
