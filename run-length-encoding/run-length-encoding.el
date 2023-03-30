@@ -39,6 +39,15 @@ return NIL."
   (let ((str-digits '("0" "1" "2" "3" "4" "5" "6" "7" "8" "9")))
     (seq-some #'string=-digit str-digits)))
 
+(defun repeat-str (n str &optional separator)
+  "Repeat string STR N times separated by SEPARATOR, which defaults to the empty
+string."
+  (let ((min-length 0)
+        (sep (or separator "")))
+    (if (< n min-length)
+        (error (format "N must be greater than or equal to %d." min-length))
+      (mapconcat #'identity (make-list n str) sep))))
+
 (defun run-length-decode (s)
 ;;; Code:
 )

@@ -25,5 +25,5 @@
 (ert-deftest repeat-str-expected-behavior ()
   (should (equal "foofoofoo" (repeat-str 3 "foo"))))
 
-(ert-deftest repeat-str-dot-join ()
+(ert-deftest repeat-str-period-separator ()
   (should (equal "foo.foo.foo" (repeat-str 3 "foo" "."))))
