@@ -259,3 +259,272 @@ It's happening because
   ELISP> (apply #'+ nil)
   0 (#o0, #x0, ?\C-@)
 #+end_src
+
+I can fix that with
+
+#+begin_src emacs-lisp
+  (and digits
+       (zerop (mod (apply #'+ (luhn-helper digits t '())) luhn-divisor)))
+#+end_src
+
+[Note that this is better than =(if digits (zerop ...) nil)=.]
+
+Still getting errors with
+
+#+begin_src emacs-lisp
+  (defun luhn-p (str)
+    "Apply Luhn algorithm to STR: double every other number; if the result is
+  greater than 9, subtract 9; sum the resulting list, and if the sum is evenly
+  divisible by 10, return T; otherwise, return NIL."
+    (let ((luhn-max 9)
+          (luhn-mult 2)
+          (digits
+           (mapcar #'string-to-number
+                   (seq-filter
+                    #'(lambda (s) (not (string= " " s)))
+                    (mapcar #'string str))))
+          (luhn-divisor 10))
+      (defun luhn-helper (digits double-p acc)
+        (let ((digit (car digits)))
+          (cond ((and digit double-p)
+                 (let* ((luhn-intermediate-result (* digit luhn-mult))
+                        (luhn-result (if (> luhn-intermediate-result luhn-max)
+                                         (- luhn-intermediate-result luhn-max)
+                                       luhn-intermediate-result)))
+                   (luhn-helper (cdr digits) nil (cons luhn-result acc))))
+                (digit (luhn-helper (cdr digits) t (cons digit acc)))
+                (t acc))))
+      ;; (print (format "digits: %s" digits))
+      (and digits
+           (zerop (mod (apply #'+ (luhn-helper digits t '())) luhn-divisor)))))
+#+end_src
+
+#+begin_example
+.FF..F.FF....FF.F.
+
+F a-valid-3-digit-input-that-can-be-reversed
+    (ert-test-failed
+     ((should
+       (luhn-p "059"))
+      :form
+      (luhn-p "059")
+      :value nil))
+
+F a-valid-luhn-number
+    (ert-test-failed
+     ((should
+       (luhn-p "49927398716"))
+      :form
+      (luhn-p "49927398716")
+      :value nil))
+
+F an-invalid-3-digit-input
+    (ert-test-failed
+     ((should-not
+       (luhn-p "095"))
+      :form
+      (luhn-p "095")
+      :value t))
+
+F input-string-containing-a-letter-in-the-middle
+    (ert-test-failed
+     ((should-error
+       (luhn-p "1234567a45670"))
+      :form
+      (luhn-p "1234567a45670")
+      :value nil :fail-reason "did not signal an error"))
+
+F input-string-containing-a-punctuation-in-the-middle
+    (ert-test-failed
+     ((should-error
+       (luhn-p "12_45678!!@45670"))
+      :form
+      (luhn-p "12_45678!!@45670")
+      :value nil :fail-reason "did not signal an error"))
+
+F single-digit
+    (ert-test-failed
+     ((should-not
+       (luhn-p "0"))
+      :form
+      (luhn-p "0")
+      :value t))
+
+F single-digit-with-space
+    (ert-test-failed
+     ((should-not
+       (luhn-p "0  "))
+      :form
+      (luhn-p "0  ")
+      :value t))
+
+F valid-luhn-with-an-odd-number-of-digits-and-non-zero-first-digit
+    (ert-test-failed
+     ((should
+       (luhn-p "109"))
+      :form
+      (luhn-p "109")
+      :value nil))
+#+end_example
+
+I think I'm doubling the wrong numbers, so start with =nil= instead of =t=?
+
+Here's what I'm getting now:
+
+#+begin_example
+  F......FF....FF...
+
+  F 16-digits-valid-luhn-number
+      (ert-test-failed
+       ((should
+         (luhn-p "1234567812345670"))
+        :form
+        (luhn-p "1234567812345670")
+        :value nil))
+
+  F input-string-containing-a-letter-in-the-middle
+      (ert-test-failed
+       ((should-error
+         (luhn-p "1234567a45670"))
+        :form
+        (luhn-p "1234567a45670")
+        :value nil :fail-reason "did not signal an error"))
+
+  F input-string-containing-a-punctuation-in-the-middle
+      (ert-test-failed
+       ((should-error
+         (luhn-p "12_45678!!@45670"))
+        :form
+        (luhn-p "12_45678!!@45670")
+        :value nil :fail-reason "did not signal an error"))
+
+  F single-digit
+      (ert-test-failed
+       ((should-not
+         (luhn-p "0"))
+        :form
+        (luhn-p "0")
+        :value t))
+
+  F single-digit-with-space
+      (ert-test-failed
+       ((should-not
+         (luhn-p "0  "))
+        :form
+        (luhn-p "0  ")
+        :value t))
+#+end_example
+
+So it looks like one useful thing to do would be to define
+=string-to-number-or-error=, which I can then map onto the string that's had
+the spaces trimmed.
+
+This could be tricky because
+
+#+begin_example
+  ELISP> (string-to-number "a")
+  0 (#o0, #x0, ?\C-@)
+#+end_example
+
+I'd originally wanted to try
+
+#+begin_src emacs-lisp
+  (defun string-to-number-or-error (s)
+    "Converts string S to a number or raises an error."
+    (or (string-to-number s)
+        (error (format "'%s' is not a number." s))))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (string-to-number-or-error "a")
+  0 (#o0, #x0, ?\C-@)
+#+end_src
+
+But that doesn't work.
+
+#+begin_src emacs-lisp
+  ELISP> (string-to-number "4a")
+  4 (#o4, #x4, ?\C-d)
+#+end_src
+
+That's important to note too.
+
+#+begin_src emacs-lisp
+  (defun string-to-number-or-error (s)
+    "Converts string S to a number or raises an error."
+    (let ((s2n (string-to-number s)))
+      (if (and (zerop s2n) (not (string= "0" s)))
+          (error (format "'%s' is not a number." s))
+        s2n)))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (string-to-number-or-error "a")
+  ,*** Eval error ***  ’a’ is not a number.
+  ELISP> (string-to-number-or-error "0")
+  0 (#o0, #x0, ?\C-@)
+  ELISP> (string-to-number-or-error "4")
+  4 (#o4, #x4, ?\C-d)
+  ELISP> (string-to-number-or-error "4a")
+  4 (#o4, #x4, ?\C-d)
+#+end_src
+
+That works *if* you're going character by character (which I am), but it
+doesn't work for anything longer.
+
+This is how we're doing by replacing =string-to-number= with
+=string-to-number-or-error=:
+
+#+begin_example
+  F............FF...
+
+  F 16-digits-valid-luhn-number
+      (ert-test-failed
+       ((should
+         (luhn-p "1234567812345670"))
+        :form
+        (luhn-p "1234567812345670")
+        :value nil))
+
+  F single-digit
+      (ert-test-failed
+       ((should-not
+         (luhn-p "0"))
+        :form
+        (luhn-p "0")
+        :value t))
+
+  F single-digit-with-space
+      (ert-test-failed
+       ((should-not
+         (luhn-p "0  "))
+        :form
+        (luhn-p "0  ")
+        :value t))
+#+end_example
+
+Well, I just noticed this: "The first step of the Luhn algorithm is to double
+every second digit, *starting from the right.*" My algorithm starts from the
+left. Fixed that with a little =reverse=; still failing on zeros.
+
+#+begin_example
+  .............FF...
+
+  F single-digit
+      (ert-test-failed
+       ((should-not
+         (luhn-p "0"))
+        :form
+        (luhn-p "0")
+        :value t))
+
+  F single-digit-with-space
+      (ert-test-failed
+       ((should-not
+         (luhn-p "0  "))
+        :form
+        (luhn-p "0  ")
+        :value t))
+#+end_example
+
+
