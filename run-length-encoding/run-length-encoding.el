@@ -54,20 +54,16 @@ number of times represented by those digits and return the decoded string."
   (defun decode-helper (xs digits acc)
     (let ((x (car xs))
           (sep ""))
-      ;; there's some redudancy in these cond predicates -- if I were smarter,
-      ;; I'd have planned the order a little better and cut down on the number
-      ;; of checks
       (cond ((str-digit-p x) (decode-helper (cdr xs) (cons x digits) acc))
-            ((and x digits (not (str-digit-p x)))
+            ;; note that because of the encoding scheme, the last character
+            ;; will never be a digit, so checking for non-nil x is ok
+            ((and x digits)
              (let ((n-repeat
                     (string-to-number
                      (mapconcat #'identity (reverse digits) sep))))
                (decode-helper
                 (cdr xs) '() (cons (repeat-str n-repeat x) acc))))
-            ((and x (str-digit-p x))
-             (decode-helper (cdr xs) (cons x digits) acc))
-            ((and x (not (str-digit-p x)))
-             (decode-helper (cdr xs) '() (cons x acc)))
+            (x (decode-helper (cdr xs) '() (cons x acc)))
             (t (mapconcat #'identity (reverse acc) sep)))))
   (let ((slist (mapcar #'string s)))
     (decode-helper slist '() '())))
