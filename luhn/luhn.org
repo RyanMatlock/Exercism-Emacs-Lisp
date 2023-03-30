@@ -1,0 +1,175 @@
+#+title: Luhn Algorithm
+
+* Initial ideas
+
+#+begin_src emacs-lisp
+  ELISP> (make-list 16 '(t nil))
+  ((t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil))
+
+  ELISP> (let ((str-length 16)
+               (pattern '(t nil)))
+           (flatten-tree (make-list str-length pattern)))
+  (t t t t t t t t t t t t t t t t)
+
+  ELISP> (let* ((str-length 16)
+                (pattern '(t nil))
+                (n-repeat (/ str-length (length pattern))))
+           (flatten-tree (make-list n-repeat pattern)))
+  (t t t t t t t t)
+
+  ELISP> (let* ((str-length 16)
+                (pattern '(:true :false))
+                (n-repeat (/ str-length (length pattern))))
+           (flatten-tree (make-list n-repeat pattern)))
+  (:true :false :true :false :true :false :true :false :true :false :true
+         :false :true :false :true :false)
+#+end_src
+
+There's probably a better way of flattening a list of lists, but the idea is
+that I should be able to =zip= this alternating =t=​/​=nil= list with the =str=
+argument to =luhn-p= in order to know which numbers to double. It would be
+really simple to apply a function to that zipped list (probably an alist)
+separately to the =t=- and =nil=-associated numbers, and because addition is
+associative, I can add those lists separately. I could do something like
+
+#+begin_src emacs-lisp
+  (let ((digits (mapcar #'string-to-number str))
+        (luhn-divisor 10))
+    (defun luhn-helper (digits double-p acc)
+      (let* ((digit (car digits))
+             (luhn-max 9)
+             (luhn-mult 2)
+             (luhn-intermediate-result (* digit luhn-mult))
+             (luhn-result (if (> luhn-intermediate-result luhn-max)
+                              (- luhn-intermediate-result luhn-max)
+                            luhn-intermediate-result)))
+        (cond ((and digit double-p)
+               (luhn-helper (cdr digits) nil (cons luhn-result acc)))
+              (digit (luhn-helper (cdr digits) t (cons digit acc)))
+              (t acc))))
+    (zerop (mod (apply #'+ (luhn-helper digits t '())) luhn-divisor)))
+#+end_src
+
+Ok, that didn't actually work, so I'm going to try to figure that out before
+moving onto my original idea.
+
+#+begin_example
+FFFFFFF..FFFFFFFFF
+
+F 16-digits-valid-luhn-number
+    (wrong-type-argument stringp 49)
+
+F a-valid-3-digit-input-that-can-be-reversed
+    (wrong-type-argument stringp 48)
+
+F a-valid-luhn-number
+    (wrong-type-argument stringp 52)
+
+F an-empty-string
+    (wrong-type-argument number-or-marker-p nil)
+
+F an-invalid-11-digit-number
+    (wrong-type-argument stringp 52)
+
+F an-invalid-3-digit-input
+    (wrong-type-argument stringp 48)
+
+F another-single-digit
+    (wrong-type-argument stringp 57)
+
+F invalid-16-digit-luhn-number
+    (wrong-type-argument stringp 49)
+
+F invalid-long-number-with-a-remainder-divisble-by-5
+    (wrong-type-argument stringp 49)
+
+F multiple-zeros
+    (wrong-type-argument stringp 48)
+
+F multiple-zeros-with-space
+    (wrong-type-argument stringp 48)
+
+F single-digit
+    (wrong-type-argument stringp 48)
+
+F single-digit-with-space
+    (wrong-type-argument stringp 48)
+
+F space-only
+    (wrong-type-argument stringp 32)
+
+F valid-luhn-with-an-odd-number-of-digits-and-non-zero-first-digit
+    (wrong-type-argument stringp 49)
+
+F very-long-input-is-valid
+    (wrong-type-argument stringp 57)
+#+end_example
+
+From =luhn-test.el=:
+
+#+begin_src emacs-lisp
+  (ert-deftest single-digit-with-space ()
+    (should-not (luhn-p "0  ")))
+
+  (ert-deftest multiple-zeros ()
+    (should (luhn-p "0000")))
+
+  (ert-deftest multiple-zeros-with-space ()
+    (should (luhn-p "0 0 0")))
+
+  (ert-deftest a-valid-3-digit-input-that-can-be-reversed ()
+    (should (luhn-p "059")))
+
+  (ert-deftest an-invalid-3-digit-input ()
+    (should-not (luhn-p "095")))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (luhn-p "0 0 0")
+  ,*** Eval error ***  Wrong type argument: stringp, 48
+  ELISP> (mapcar #'string-to-number "0 0 0")
+  ,*** Eval error ***  Wrong type argument: stringp, 48
+  ELISP> (mapcar #'string-to-number "059")
+  ,*** Eval error ***  Wrong type argument: stringp, 48
+  ELISP> (mapcar #'string-to-number  (mapcar #'string "059"))
+  (0 5 9)
+
+  ELISP> (mapcar #'string-to-number  (mapcar #'string "0 5 9"))
+  (0 0 5 0 9)
+#+end_src
+
+Ah, that makes sense. I guess I'll have to filter out spaces first.
+
+#+begin_quote
+Aside: I just noticed that I've been making a mistake in writing my own ERT
+tests: I've been writing
+
+#+begin_src emacs-lisp
+  (should (equal t (<some function> ...)))
+  (should (equal nil (<some function> ...)))
+#+end_src
+
+when I should have been writing
+
+#+begin_src emacs-lisp
+  (should (<some function> ...))
+  (should-not (<some function> ...))
+#+end_src
+
+when a function returns =t= or =nil=.
+#+end_quote
