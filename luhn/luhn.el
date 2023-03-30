@@ -2,13 +2,6 @@
 
 ;;; Commentary:
 
-(defun string-to-number-or-error (s)
-  "Converts string S to a number or raises an error."
-  (let ((s2n (string-to-number s)))
-    (if (and (zerop s2n) (not (string= "0" s)))
-        (error (format "'%s' is not a number." s))
-      s2n)))
-
 (defun valid-luhn-char-p (c)
   "For char C, return T if it is a digit or space; otherwise, return NIL."
   (let ((valid-chars
@@ -23,18 +16,18 @@
                "")))
 
 (defun luhn-p (str)
-  "Apply Luhn algorithm to STR: double every other number; if the result is
-greater than 9, subtract 9; sum the resulting list, and if the sum is evenly
-divisible by 10, return T; otherwise, return NIL."
-  (let ((min-length 1)
-        (luhn-max 9)
-        (luhn-mult 2)
-        (digits
-         (reverse (mapcar #'string-to-number-or-error
-                          (seq-filter
-                           #'(lambda (s) (not (string= " " s)))
-                           (mapcar #'string str)))))
-        (luhn-divisor 10))
+  "Apply Luhn algorithm to STR: starting from the *right*, double every other
+number; if the result is greater than 9, subtract 9; sum the resulting list,
+and if the sum is evenly divisible by 10, return T; otherwise, return NIL."
+  (let* ((min-length 1)
+         (luhn-max 9)
+         (luhn-mult 2)
+         (luhn-divisor 10)
+         (str-no-spaces (remove-all-spaces str))
+         (digits
+          (reverse (mapcar #'(lambda (c) (string-to-number (string c)))
+                           (seq-filter #'valid-luhn-char-p str-no-spaces)))))
+
     (defun luhn-helper (digits double-p acc)
       (let ((digit (car digits)))
         (cond ((and digit double-p)
@@ -45,10 +38,13 @@ divisible by 10, return T; otherwise, return NIL."
                  (luhn-helper (cdr digits) nil (cons luhn-result acc))))
               (digit (luhn-helper (cdr digits) t (cons digit acc)))
               (t acc))))
-    ;; (print (format "digits: %s" digits))
-    (and digits
-         (> (length digits) min-length)
-         (zerop (mod (apply #'+ (luhn-helper digits nil '())) luhn-divisor)))))
+
+    (cond ((length= str-no-spaces (length digits))
+           (and digits
+                (> (length digits) min-length)
+                (zerop (mod (apply #'+ (luhn-helper digits nil '()))
+                            luhn-divisor))))
+          (t (error (format "Invalid character(s) in '%s'" str))))))
 
 (provide 'luhn)
 ;;; luhn.el ends here
