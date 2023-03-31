@@ -552,3 +552,126 @@ Checking for valid characters:
   ELISP> (valid-luhn-char-p (string-to-char " "))
   t
 #+end_src
+
+Passing all tests with the following:
+
+#+begin_src emacs-lisp
+  (defun valid-luhn-char-p (c)
+    "For char C, return T if it is a digit or space; otherwise, return NIL."
+    (let ((valid-chars
+           (append '(" ") (mapcar #'string (number-sequence ?0 ?9)))))
+      (seq-some #'(lambda (char) (string= char (string c))) valid-chars)))
+
+  (defun remove-all-spaces (str)
+    "Remove all spaces from string STR."
+    (let ((space-char (string-to-char " ")))
+      (mapconcat #'string
+                 (seq-filter #'(lambda (char) (not (equal space-char char))) str)
+                 "")))
+
+  (defun luhn-p (str)
+    "Apply Luhn algorithm to STR: starting from the *right*, double every other
+  number; if the result is greater than 9, subtract 9; sum the resulting list,
+  and if the sum is evenly divisible by 10, return T; otherwise, return NIL."
+    (let* ((min-length 1)
+           (luhn-max 9)
+           (luhn-mult 2)
+           (luhn-divisor 10)
+           (str-no-spaces (remove-all-spaces str))
+           (digits
+            (reverse (mapcar #'(lambda (c) (string-to-number (string c)))
+                             (seq-filter #'valid-luhn-char-p str-no-spaces)))))
+
+      (defun luhn-helper (digits double-p acc)
+        (let ((digit (car digits)))
+          (cond ((and digit double-p)
+                 (let* ((luhn-intermediate-result (* digit luhn-mult))
+                        (luhn-result (if (> luhn-intermediate-result luhn-max)
+                                         (- luhn-intermediate-result luhn-max)
+                                       luhn-intermediate-result)))
+                   (luhn-helper (cdr digits) nil (cons luhn-result acc))))
+                (digit (luhn-helper (cdr digits) t (cons digit acc)))
+                (t acc))))
+
+      (cond ((length= str-no-spaces (length digits))
+             (and digits
+                  (> (length digits) min-length)
+                  (zerop (mod (apply #'+ (luhn-helper digits nil '()))
+                              luhn-divisor))))
+            (t (error (format "Invalid character(s) in '%s'" str))))))
+#+end_src
+
+But I can do better. That =zip= method I considered before seems fancier.
+
+Still having trouble with flattening though.
+
+#+begin_src emacs-lisp
+  ELISP> (require 'dash)
+  dash
+  ELISP> (-flatten '(:foo :bar '(:baz '(:qux))))
+  (:foo :bar quote :baz quote :qux)
+
+  ELISP> (-flatten '(:foo :bar (:baz (:qux))))
+  (:foo :bar :baz :qux)
+
+  ELISP> (-flatten (make-list 8 '(nil t)))
+  (t t t t t t t t)
+
+  ELISP> (-flatten (make-list 8 '(t nil)))
+  (t t t t t t t t)
+#+end_src
+
+I guess that makes sense because
+
+#+begin_src emacs-lisp
+  ELISP> '(:foo . nil)
+  (:foo)
+#+end_src
+
+Is =mapcan= useful for this?
+
+#+begin_src emacs-lisp
+  ELISP> (mapcan #'list (make-list 8 '(t nil)))
+  ((t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil)
+   (t nil))
+
+  ELISP> (mapcan #'identity (make-list 8 '(t nil)))
+  ,*** Eval error ***  List contains a loop: (t nil t nil . #2)
+#+end_src
+
+If it is, I'm not sure how to best use it.
+
+I guess I don't need a general purpose =flatten= function because I'm only
+dealing with a list of lists, in which case [[https://stackoverflow.com/a/969320][this answer from stackoverflow]] is
+all I need:
+
+#+begin_src emacs-lisp
+  ELISP> (apply #'append (make-list 8 '(nil t)))
+  (nil t nil t nil t nil t nil t nil t nil t nil t)
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (let ((digits
+                (mapcar
+                 #'(lambda (x) (string-to-number (string x)))
+                 "1389419")))
+           (seq-mapn #'(lambda (digit boolean) (cons digit boolean))
+                     digits
+                     (apply #'append (make-list (length digits) '(nil t)))))
+  ((1)
+   (3 . t)
+   (8)
+   (9 . t)
+   (4)
+   (1 . t)
+   (9))
+
+  ELISP> (cdr '(1))
+  nil
+#+end_src
