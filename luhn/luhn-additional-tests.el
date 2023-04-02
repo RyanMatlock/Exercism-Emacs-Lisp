@@ -2,6 +2,7 @@
 (declare-function valid-luhn-char-p "luhn.el" (c))
 (declare-function remove-all-spaces "luhn.el" (str))
 (declare-function zip-seqs-alist "luhn.el" (xs ys))
+(declare-function luhnify "luhn.el" (n))
 
 (ert-deftest valid-luhn-char-p-on-str ()
   (should-error (valid-luhn-char-p " ")))
@@ -48,3 +49,13 @@
 (ert-deftest zip-seqs-alist-non-list-sequences ()
   (should (equal '((?f . ?b) (?o . ?a) (?o . ?r))
                  (zip-seqs-alist "foo" "bar"))))
+
+(ert-deftest luhnify-not-whole-number-error ()
+  (should-error (luhnify -1)))
+
+(ert-deftest luhnify-max-digit ()
+  (should-error (luhnify 10)))
+
+(ert-deftest luhnify-numbers ()
+  (should (equal '(0 2 4 6 8 1 3 5 7 9)
+                 (mapcar #'luhnify (number-sequence 0 9)))))
