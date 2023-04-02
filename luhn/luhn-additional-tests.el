@@ -53,7 +53,7 @@
 (ert-deftest luhnify-not-whole-number-error ()
   (should-error (luhnify -1)))
 
-(ert-deftest luhnify-max-digit ()
+(ert-deftest luhnify-greater-than-max-digit ()
   (should-error (luhnify 10)))
 
 (ert-deftest luhnify-numbers ()
