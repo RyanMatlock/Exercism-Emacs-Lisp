@@ -44,3 +44,7 @@
 
 (ert-deftest zip-lists-alist-ys-not-sequence-error ()
   (should-error (zip-lists-alist '(:foo :bar) :baz)))
+
+(ert-deftest zip-lists-alist-non-list-sequences ()
+  (should (equal '((?f . ?b) (?o . ?a) (?o . ?r))
+                 (zip-lists-alist "foo" "bar"))))
