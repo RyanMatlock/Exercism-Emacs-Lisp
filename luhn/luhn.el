@@ -15,10 +15,10 @@
                (seq-filter #'(lambda (char) (not (equal space-char char))) str)
                "")))
 
-(defun zip-lists-alist (xs ys)
-  "Combine each element of list XS with each element of YS in an alist; if YS
-is shorter than XS, YS will be repeated enough times to exceed the length of XS
-before combining into the alist."
+(defun zip-seqs-alist (xs ys)
+  "Combine each element of sequence XS with each element of sequence YS in an
+alist; if YS is shorter than XS, YS will be repeated enough times to exceed the
+length of XS before combining into the alist."
   (defun zipper (ps qs)
     (seq-mapn #'(lambda (p q) (cons p q)) ps qs))
   (cond ((not (sequencep xs)) (error "XS must be a sequence."))
