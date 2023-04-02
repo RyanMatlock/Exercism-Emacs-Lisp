@@ -28,7 +28,7 @@
   (should (string= "foobar" (remove-all-spaces "fo oba   r   "))))
 
 (ert-deftest zip-lists-to-alist-list-with-nil-t ()
-  (should (equal '((:foo . nil) (:bar . t) (:baz . nil) (:qux .t))
+  (should (equal '((:foo . nil) (:bar . t) (:baz . nil) (:qux . t))
                  (zip-lists-alist '(:foo :bar :baz :qux) '(nil t)))))
 
 (ert-deftest zip-lists-to-alist-with-nil ()
