@@ -30,6 +30,20 @@ length of XS before combining into the alist."
            (zipper xs new-ys)))
         (t (zipper xs ys))))
 
+(defun luhnify (n)
+  "Apply Luhn operation to whole number N; error if N is not a whole number
+less than 10."
+  (let ((luhn-max-digit 9)
+        (luhn-mult 2)
+        (luhn-divisor 10))
+    (cond ((and (wholenump n) (<= n luhn-max-digit))
+           (let ((luhn-intermediate (* n luhn-mult)))
+             (if (> luhn-intermediate luhn-max-digit)
+                 (- luhn-intermediate luhn-max-digit)
+               luhn-intermediate)))
+          (t (error (format "N must be a whole number less than or equal to %d."
+                            luhn-max-digit))))))
+
 (defun luhn-p (str)
   "Apply Luhn algorithm to STR: starting from the *right*, double every other
 number; if the result is greater than 9, subtract 9; sum the resulting list,
