@@ -15,6 +15,21 @@
                (seq-filter #'(lambda (char) (not (equal space-char char))) str)
                "")))
 
+(defun zip-lists-alist (xs ys)
+  "Combine each element of list XS with each element of YS in an alist; if YS
+is shorter than XS, YS will be repeated enough times to exceed the length of XS
+before combining into the alist."
+  (defun zipper (ps qs)
+    (seq-mapn #'(lambda (p q) (cons p q)) ps qs))
+  (cond ((not (sequencep xs)) (error "XS must be a sequence."))
+        ((not (sequencep ys)) (error "YS must be a sequence."))
+        ((> (length xs) (length ys))
+         (let
+             ;; note that (>= (length new-ys) (length xs)), and that's ok
+             ((new-ys (apply #'append (make-list (length xs) ys))))
+           (zipper xs new-ys)))
+        (t (zipper xs ys))))
+
 (defun luhn-p (str)
   "Apply Luhn algorithm to STR: starting from the *right*, double every other
 number; if the result is greater than 9, subtract 9; sum the resulting list,
