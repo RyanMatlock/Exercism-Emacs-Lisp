@@ -30,12 +30,42 @@ length of XS before combining into the alist."
            (zipper xs new-ys)))
         (t (zipper xs ys))))
 
+;; (defun luhn-p (str)
+;;   "Apply Luhn algorithm to STR: starting from the *right*, double every other
+;; number; if the result is greater than 9, subtract 9; sum the resulting list,
+;; and if the sum is evenly divisible by 10, return T; otherwise, return NIL."
+;;   (let* ((luhn-min-length 1)
+;;          (luhn-max-digit 9)
+;;          (luhn-mult 2)
+;;          (luhn-divisor 10)
+;;          (str-no-spaces (remove-all-spaces str))
+;;          (digits
+;;           (reverse (mapcar #'(lambda (c) (string-to-number (string c)))
+;;                            (seq-filter #'valid-luhn-char-p str-no-spaces)))))
+
+;;     (defun luhn-helper (digits double-p acc)
+;;       (let ((digit (car digits)))
+;;         (cond ((and digit double-p)
+;;                (let* ((luhn-intermediate-result (* digit luhn-mult))
+;;                       (luhn-result (if (> luhn-intermediate-result luhn-max-digit)
+;;                                        (- luhn-intermediate-result luhn-max-digit)
+;;                                      luhn-intermediate-result)))
+;;                  (luhn-helper (cdr digits) nil (cons luhn-result acc))))
+;;               (digit (luhn-helper (cdr digits) t (cons digit acc)))
+;;               (t acc))))
+
+;;     (cond ((length= str-no-spaces (length digits))
+;;            (and digits
+;;                 (> (length digits) luhn-min-length)
+;;                 (zerop (mod (apply #'+ (luhn-helper digits nil '()))
+;;                             luhn-divisor))))
+;;           (t (error (format "Invalid character(s) in '%s'" str))))))
+
 (defun luhnify (n)
   "Apply Luhn operation to whole number N; error if N is not a whole number
 less than 10."
   (let ((luhn-max-digit 9)
-        (luhn-mult 2)
-        (luhn-divisor 10))
+        (luhn-mult 2))
     (cond ((and (wholenump n) (<= n luhn-max-digit))
            (let ((luhn-intermediate (* n luhn-mult)))
              (if (> luhn-intermediate luhn-max-digit)
@@ -48,31 +78,45 @@ less than 10."
   "Apply Luhn algorithm to STR: starting from the *right*, double every other
 number; if the result is greater than 9, subtract 9; sum the resulting list,
 and if the sum is evenly divisible by 10, return T; otherwise, return NIL."
-  (let* ((min-length 1)
-         (luhn-max 9)
-         (luhn-mult 2)
+  (let* ((luhn-min-length 2)
+         ;; (luhn-max-digit 9)
+         ;; (luhn-mult 2)
          (luhn-divisor 10)
          (str-no-spaces (remove-all-spaces str))
          (digits
           (reverse (mapcar #'(lambda (c) (string-to-number (string c)))
                            (seq-filter #'valid-luhn-char-p str-no-spaces)))))
 
-    (defun luhn-helper (digits double-p acc)
-      (let ((digit (car digits)))
-        (cond ((and digit double-p)
-               (let* ((luhn-intermediate-result (* digit luhn-mult))
-                      (luhn-result (if (> luhn-intermediate-result luhn-max)
-                                       (- luhn-intermediate-result luhn-max)
-                                     luhn-intermediate-result)))
-                 (luhn-helper (cdr digits) nil (cons luhn-result acc))))
-              (digit (luhn-helper (cdr digits) t (cons digit acc)))
-              (t acc))))
+    ;; (defun luhn-helper (digits double-p acc)
+    ;;   (let ((digit (car digits)))
+    ;;     (cond ((and digit double-p)
+    ;;            (let* ((luhn-intermediate-result (* digit luhn-mult))
+    ;;                   (luhn-result (if (> luhn-intermediate-result
+    ;;                                       luhn-max-digit)
+    ;;                                    (- luhn-intermediate-result
+    ;;                                       luhn-max-digit)
+    ;;                                  luhn-intermediate-result)))
+    ;;              (luhn-helper (cdr digits) nil (cons luhn-result acc))))
+    ;;           (digit (luhn-helper (cdr digits) t (cons digit acc)))
+    ;;           (t acc))))
 
     (cond ((length= str-no-spaces (length digits))
            (and digits
-                (> (length digits) min-length)
-                (zerop (mod (apply #'+ (luhn-helper digits nil '()))
-                            luhn-divisor))))
+                (>= (length digits) luhn-min-length)
+                (let ((luhn-digits (seq-filter #'(lambda (x-alist)
+                                                   (cdr x-alist))
+                                               digits))
+                      (plain-digits (seq-filter #'(lambda (x-alist)
+                                                    (not (cdr x-alist)))
+                                                digits)))
+                  (print (format (concat "luhn-digits: %s\n"
+                                         "plain-digits: %s")
+                                 luhn-digits
+                                 plain-digits))
+                  (zerop (mod (+ (apply #'+ (seq-mapn #'luhnify
+                                                      luhn-digits))
+                                 (apply #'+ plain-digits))
+                              luhn-divisor)))))
           (t (error (format "Invalid character(s) in '%s'" str))))))
 
 (provide 'luhn)
