@@ -772,3 +772,107 @@ I'm not surprised there's an error.+ Never mind, I just remembered how I did
 this in the previous version, and using =and= to return a boolean makes
 sense. Now I'm seeing that the issue is that I'm applying =+= to alists of the
 form =(<number> . <boolean>)=.
+
+#+begin_src emacs-lisp
+  (defun luhn-p (str)
+    "Apply Luhn algorithm to STR: starting from the *right*, double every other
+  number; if the result is greater than 9, subtract 9; sum the resulting list,
+  and if the sum is evenly divisible by 10, return T; otherwise, return NIL."
+    (let* ((luhn-min-length 2)
+           (luhn-divisor 10)
+           (str-no-spaces (remove-all-spaces str))
+           (digits
+            (reverse (mapcar #'(lambda (c) (string-to-number (string c)))
+                             (seq-filter #'valid-luhn-char-p str-no-spaces)))))
+      (cond ((length= str-no-spaces (length digits))
+             (print (format "digits: %s" digits))
+             (and digits
+                  (>= (length digits) luhn-min-length)
+                  (let ((luhn-digits
+                         (mapcar #'car
+                                 (seq-filter #'(lambda (x-alist)
+                                                 (cdr x-alist))
+                                             digits)))
+                        (plain-digits
+                         (mapcar #'car
+                                 (seq-filter #'(lambda (x-alist)
+                                                 (not (cdr x-alist)))
+                                             digits))))
+                    (print (format (concat "\tluhn-digits: %s\n"
+                                           "\tplain-digits: %s")
+                                   luhn-digits
+                                   plain-digits))
+                    (zerop (mod (+ (apply #'+ (seq-mapn #'luhnify
+                                                        luhn-digits))
+                                   (apply #'+ plain-digits))
+                                luhn-divisor)))))
+            (t (error (format "Invalid character(s) in '%s'" str))))))
+#+end_src
+
+#+begin_example
+  ELISP> (luhn-p "059")
+
+  "digits: (9 5 0)"
+
+  ,*** Eval error ***  Wrong type argument: listp, 9
+#+end_example
+
+Ohhh, it looks like I never zipped up the digits into an alist :facepalm:
+
+#+begin_src emacs-lisp
+  (defun luhn-p (str)
+    "Apply Luhn algorithm to STR: starting from the *right*, double every other
+  number; if the result is greater than 9, subtract 9; sum the resulting list,
+  and if the sum is evenly divisible by 10, return T; otherwise, return NIL."
+    (let* ((luhn-min-length 2)
+           (luhn-divisor 10)
+           (str-no-spaces (remove-all-spaces str))
+           (digits
+            (reverse (mapcar #'(lambda (c) (string-to-number (string c)))
+                             (seq-filter #'valid-luhn-char-p str-no-spaces))))
+           (digits-alist (zip-seqs-alist digits '(nil t))))
+      (cond ((length= str-no-spaces (length digits))
+             (print (format "digits: %s" digits))
+             (and digits
+                  (>= (length digits) luhn-min-length)
+                  (let ((luhn-digits
+                         (mapcar #'car
+                                 (seq-filter #'(lambda (x-alist)
+                                                 (cdr x-alist))
+                                             digits-alist)))
+                        (plain-digits
+                         (mapcar #'car
+                                 (seq-filter #'(lambda (x-alist)
+                                                 (not (cdr x-alist)))
+                                             digits-alist))))
+                    (print (format (concat "\tluhn-digits: %s\n"
+                                           "\tplain-digits: %s")
+                                   luhn-digits
+                                   plain-digits))
+                    (zerop (mod (+ (apply #'+ (seq-mapn #'luhnify
+                                                        luhn-digits))
+                                   (apply #'+ plain-digits))
+                                luhn-divisor)))))
+            (t (error (format "Invalid character(s) in '%s'" str))))))
+#+end_src
+
+#+begin_example
+  ELISP> (luhn-p "059")
+
+  "digits: (9 5 0)"
+
+  " luhn-digits: (5)
+      plain-digits: (9 0)"
+
+  t
+  ELISP> (luhn-p "095")
+
+  "digits: (5 9 0)"
+
+  " luhn-digits: (9)
+      plain-digits: (5 0)"
+
+  nil
+#+end_example
+
+Passed all tests.
