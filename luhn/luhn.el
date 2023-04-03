@@ -55,7 +55,6 @@ and if the sum is evenly divisible by 10, return T; otherwise, return NIL."
                            (seq-filter #'valid-luhn-char-p str-no-spaces))))
          (digits-alist (zip-seqs-alist digits '(nil t))))
     (cond ((length= str-no-spaces (length digits))
-           ;; (print (format "digits: %s" digits))
            (and digits
                 (>= (length digits) luhn-min-length)
                 (let ((luhn-digits
@@ -68,10 +67,6 @@ and if the sum is evenly divisible by 10, return T; otherwise, return NIL."
                                (seq-filter #'(lambda (x-alist)
                                                (not (cdr x-alist)))
                                            digits-alist))))
-                  ;; (print (format (concat "\tluhn-digits: %s\n"
-                  ;;                        "\tplain-digits: %s")
-                  ;;                luhn-digits
-                  ;;                plain-digits))
                   (zerop (mod (+ (apply #'+ (seq-mapn #'luhnify
                                                       luhn-digits))
                                  (apply #'+ plain-digits))
