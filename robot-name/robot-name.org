@@ -1,0 +1,142 @@
+#+title: Robot Name
+
+* Initial ideas
+
+Idea: randomly draw characters from a list and concatenate them.
+
+#+begin_src emacs-lisp
+  ELISP> (concat '(?A ?B) '(?0 ?1 ?2))
+  "AB012"
+#+end_src
+
+#+begin_quote
+Aside: this regexp-based test from =robot-name-test.el= is good to know about:
+
+#+begin_src emacs-lisp
+  (defvar robot-name-re
+    (rx string-start
+        (= 2 upper-case)
+        (= 3 digit)
+        string-end))
+
+  (ert-deftest name-matches-expected-pattern ()
+    (let ((name (robot-name *robbie*)))
+      (should (string-match-p robot-name-re name))))
+#+end_src
+#+end_quote
+
+* Debugging
+
+Current code:
+
+#+begin_src emacs-lisp
+  (defun build-robot ()
+    "Build a new robot with a random name."
+    (let* ((letters (number-sequence ?A ?Z))
+           (letter-limit (1+ (length letters)))
+           (digits (number-sequence ?0 ?9))
+           (digit-limit (1+ (length digits))))
+      (concat
+       ;; note: not using the values of the list mapcar is applied to
+       (mapcar #'(lambda (-) (nth (random letter-limit) letters))
+               '(t t))
+       (mapcar #'(lambda (-) (nth (random digit-limit) digits))
+               '(t t t)))))
+
+  (defun robot-name (robot)
+    "Get the ROBOT's name."
+    (print robot))
+
+  (defun reset-robot (robot)
+    "Reset the name of ROBOT.  Factory reset!"
+    (setq robot (build-robot)))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (let ((robo (build-robot)))
+           (robot-name robo)
+           (reset-robot robo)
+           (robot-name robo))
+
+  "BW837"
+
+  "BW837"
+
+  "BW837"
+#+end_src
+
+Ok, maybe I need to reset the seed every time I call =build-robot=:
+
+#+begin_src emacs-lisp
+  (defun build-robot ()
+    "Build a new robot with a random name."
+    (let* ((letters (number-sequence ?A ?Z))
+           (letter-limit (1+ (length letters)))
+           (digits (number-sequence ?0 ?9))
+           (digit-limit (1+ (length digits))))
+      (random t)
+      (concat
+       ;; note: not using the values of the list mapcar is applied to
+       (mapcar #'(lambda (-) (nth (random letter-limit) letters))
+               '(t t))
+       (mapcar #'(lambda (-) (nth (random digit-limit) digits))
+               '(t t t)))))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (let ((robo (build-robot)))
+           (robot-name robo)
+           (reset-robot robo)
+           (robot-name robo))
+
+  "UU208"
+
+  "UU208"
+
+  "UU208"
+#+end_src
+
+Test results:
+
+#+begin_example
+  Selector: t
+  Passed:  3
+  Failed:  1 (1 unexpected)
+  Skipped: 0
+  Total:   4/4
+
+  Started at:   2023-04-03 14:12:19-0700
+  Finished.
+  Finished at:  2023-04-03 14:12:19-0700
+
+  .F..
+
+  F name-can-be-reset
+      (wrong-type-argument characterp nil)
+#+end_example
+
+#+begin_example
+  Selector: t
+  Passed:  3
+  Failed:  1 (1 unexpected)
+  Skipped: 0
+  Total:   4/4
+
+  Started at:   2023-04-03 14:12:52-0700
+  Finished.
+  Finished at:  2023-04-03 14:12:52-0700
+
+  .F..
+
+  F name-can-be-reset
+      (ert-test-failed
+       ((should-not
+         (equal original-name
+                (robot-name robot)))
+        :form
+        (equal "SF402" "SF402")
+        :value t :explanation nil))
+#+end_example
+
+Running the tests one after the other results in this behavior, which I  don't
+understand.

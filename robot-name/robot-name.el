@@ -8,18 +8,25 @@
 
 (defun build-robot ()
   "Build a new robot with a random name."
-;;; Code:
-)
+  (let* ((letters (number-sequence ?A ?Z))
+         (letter-limit (1+ (length letters)))
+         (digits (number-sequence ?0 ?9))
+         (digit-limit (1+ (length digits))))
+    (random t)
+    (concat
+     ;; note: not using the values of the list mapcar is applied to
+     (mapcar #'(lambda (-) (nth (random letter-limit) letters))
+             '(t t))
+     (mapcar #'(lambda (-) (nth (random digit-limit) digits))
+             '(t t t)))))
 
 (defun robot-name (robot)
   "Get the ROBOT's name."
-;;; Code:
-)
+  (print robot))
 
 (defun reset-robot (robot)
   "Reset the name of ROBOT.  Factory reset!"
-;;; Code:
-)
+  (setq robot (build-robot)))
 
 (provide 'robot-name)
 ;;; robot-name.el ends here
