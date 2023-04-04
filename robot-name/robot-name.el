@@ -8,8 +8,8 @@
 
 (defun random-element (xs)
   "Return a random element from list XS; error if XS is not a list."
-  (cond ((listp xs) (nth (random (length xs)) xs))
-        (t (error "XS must be a list."))))
+  (cond ((sequencep xs) (nth (random (length xs)) (mapcar #'identity xs)))
+        (t (error "XS must be a sequence."))))
 
 (defun build-robot ()
   "Build a new robot with a random name."
