@@ -12,4 +12,8 @@
 end of the list."
   (should (equal :foo (random-element '(:foo)))))
 
+(ert-deftest random-element-never-nil ()
+  (let ((list-of-lists (make-list 100 (number-sequence 0 1))))
+    (should (seq-every-p #'random-element list-of-lists))))
+
 (provide 'robot-name-additional-tests)
