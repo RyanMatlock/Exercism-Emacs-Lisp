@@ -8,7 +8,7 @@
 
 (defun random-element (xs)
   "Return a random element from list XS; error if XS is not a list."
-  (cond ((listp xs) (nth (random (1+ (length xs))) xs))
+  (cond ((listp xs) (nth (random (length xs)) xs))
         (t (error "XS must be a list."))))
 
 (defun build-robot ()
