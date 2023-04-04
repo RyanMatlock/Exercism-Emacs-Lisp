@@ -6,6 +6,11 @@
 ;; to a new name. Instructions are in README.md
 ;;
 
+(defun random-element (xs)
+  "Return a random element from list XS; error if XS is not a list."
+  (cond ((listp xs) (nth (random (1+ (length xs))) xs))
+        (t (error "XS must be a list."))))
+
 (defun build-robot ()
   "Build a new robot with a random name."
   (let* ((letters (number-sequence ?A ?Z))
