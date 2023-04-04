@@ -1,3 +1,4 @@
+#+options: ^:{}
 #+title: Robot Name
 
 * Initial ideas
@@ -140,3 +141,313 @@ Test results:
 
 Running the tests one after the other results in this behavior, which I  don't
 understand.
+
+#+begin_src emacs-lisp
+  ELISP> (build-robot)
+  ,*** Eval error ***  Wrong type argument: characterp, nil
+  ELISP> (build-robot)
+  "KM718"
+  ELISP> (build-robot)
+  ,*** Eval error ***  Wrong type argument: characterp, nil
+#+end_src
+
+That's odd.
+
+Slight refactoring:
+
+#+begin_src emacs-lisp
+  (defun random-element (xs)
+    "Return a random element from list XS; error if XS is not a list."
+    (cond ((listp xs) (nth (random (1+ (length xs))) xs))
+          (t (error "XS must be a list."))))
+
+  (defun build-robot ()
+    "Build a new robot with a random name."
+    (let* ((letters (number-sequence ?A ?Z))
+           (digits (number-sequence ?0 ?9))
+           (letter-prefix
+            ;; note: not using the values of the list mapcar is applied to, so
+            ;; using the dash like the underscore as a variable name in Python
+            (mapcar #'(lambda (-) (random-element letters)) '(1 2)))
+           (numbers
+            (mapcar #'(lambda (-) (random-element digits) ) '(1 2 3))))
+      (print (format (concat "letter-prefix: %s\n"
+                             "numbers: %s")
+                     letter-prefix numbers))
+
+      )
+    )
+#+end_src
+
+#+begin_example
+  ELISP> (build-robot)
+
+  "letter-prefix: (86 71)
+  numbers: (57 52 49)"
+
+  "letter-prefix: (86 71)
+  numbers: (57 52 49)"
+  ELISP> (build-robot)
+
+  "letter-prefix: (87 76)
+  numbers: (52 50 nil)"
+
+  "letter-prefix: (87 76)
+  numbers: (52 50 nil)"
+#+end_example
+
+That's very odd. Maybe I should try a much shorter sequence and see what
+happens.
+
+** testing/debugging
+
+#+begin_src emacs-lisp
+  ;; probably bad form to define a function just to perform a test because it
+  ;; assumes this function works, but ¯\_(ツ)_/¯
+  (defun elem-in-list-p (elem lst &optional num-tests)
+    "Check if ELEM is in list LST by calling RANDOM-ELEMENT on LST and checking
+  for equality with ELEM NUM-TESTS times (default for NUM-TESTS: 1000). Note that
+  NUM-TESTS should be >> (LENGTH LST)."
+    (let* ((trials (if (wholenump num-tests) num-tests 1000))
+           (list-of-lists (make-list trials lst)))
+      (seq-some #'(lambda (xs) (equal elem (random-element xs))) list-of-lists)))
+#+end_src
+
+#+begin_example
+  ELISP> (elem-in-list-p :foo (list :foo :bar :baz) 1)
+  nil
+  ELISP> (elem-in-list-p :foo (list :foo :bar :baz) 1)
+  nil
+  ELISP> (elem-in-list-p :foo (list :foo :bar :baz) 1)
+  nil
+  ELISP> (elem-in-list-p :foo (list :foo :bar :baz) 1)
+  t
+#+end_example
+
+#+begin_src emacs-lisp
+  (ert-deftest random-element-every-element-selected ()
+    "Call RANDOM-ELEMENT on the same list a bunch of times and ensure that every
+  element is hit at least once."
+
+    ;; probably bad form to define a function just to perform a test because it
+    ;; assumes this function works, but ¯\_(ツ)_/¯
+    (defun elem-in-list-p (elem lst &optional num-tests)
+      "Check if ELEM is in list LST by calling RANDOM-ELEMENT on LST and checking
+  for equality with ELEM NUM-TESTS times (default for NUM-TESTS: 1000). Note that
+  NUM-TESTS should be >> (LENGTH LST)."
+      (let* ((trials (if (wholenump num-tests) num-tests (* 1000 (length lst))))
+             (list-of-lists (make-list trials lst)))
+        (seq-some #'(lambda (xs) (equal elem (random-element xs)))
+                  list-of-lists)))
+
+    (let* (ys '(:foo :bar :baz))
+      (should (seq-every-p #'(lambda (y) (elem-in-list-p y ys)) ys))))
+#+end_src
+
+#+begin_example
+  .F...
+
+  F random-element-every-element-selected
+      Call RANDOM-ELEMENT on the same list a bunch of times and ensure that every
+      (void-function :foo)
+#+end_example
+
+Oops, forgot to wrap the =let= variables in double parenetheses. It passes!
+
+** debugging round 2
+
+#+begin_src emacs-lisp
+  (defun random-element (xs)
+    "Return a random element from list XS; error if XS is not a list."
+    (cond ((sequencep xs)
+           (progn
+             (random t)
+             (nth (random (length xs)) (mapcar #'identity xs))))
+          (t (error "XS must be a sequence."))))
+
+  (defun generate-robot-name ()
+    "Generate a random robot name of the form [A-Z]\\{2\\}[0-9]\\{3\\}."
+    (let* ((letters (number-sequence ?A ?Z))
+           (digits (number-sequence ?0 ?9))
+           (letter-prefix
+            ;; note: not using the values of the list mapcar is applied to, so
+            ;; using the dash like the underscore as a variable name in Python
+            (mapcar #'(lambda (-) (random-element letters)) '(1 2)))
+           (numbers
+            (mapcar #'(lambda (-) (random-element digits) ) '(1 2 3))))
+      (concat letter-prefix numbers)))
+
+  (defun build-robot ()
+    "Build a new robot with a random name."
+    (generate-robot-name))
+
+  (defun robot-name (robot)
+    "Get the ROBOT's name."
+    robot)
+
+  (defun reset-robot (robot)
+    "Reset the name of ROBOT.  Factory reset!"
+    (setq robot (generate-robot-name)))
+#+end_src
+
+#+begin_example
+  .F..
+
+  F name-can-be-reset
+      (ert-test-failed
+       ((should-not
+         (equal original-name
+                (robot-name robot)))
+        :form
+        (equal "HI010" "HI010")
+        :value t :explanation nil))
+#+end_example
+
+#+begin_src emacs-lisp
+  ELISP> (setq test-robot (build-robot))
+  "DC803"
+  ELISP> (build-robot)
+  "TW453"
+  ELISP> (reset-robot test-robot)
+  "KA907"
+  ELISP> (robot-name test-robot)
+  "DC803"
+#+end_src
+
+It turns out I have no clue how to manage stateful variables in Emacs Lisp.
+
+#+begin_src emacs-lisp
+  (defun reset-robot (robot)
+    "Reset the name of ROBOT.  Factory reset!"
+    (let ((old-name (robot-name robot))
+          (new-name (generate-robot-name)))
+      (progn
+        (setq robot new-name)
+        (print (format (concat "current name: %s\n"
+                               "new name: %s\n"
+                               "updated name: %s")
+                       old-name
+                       new-name
+                       (robot-name robot)))
+        robot)))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (reset-robot test-robot)
+
+  "current name: DC803
+  new name: KE091
+  updated name: KE091"
+
+  "KE091"
+  ELISP> (reset-robot test-robot)
+
+  "current name: DC803
+  new name: ZZ135
+  updated name: ZZ135"
+
+  "ZZ135"
+#+end_src
+
+That's very confusing. I guess maybe I should use a hash table to
+store/retrieve the name. Well, let's try an alist first and see what happens.
+
+#+begin_src emacs-lisp
+    (defun build-robot ()
+      "Build a new robot with a random name."
+      (list (cons :name (generate-robot-name))))
+
+    (defun robot-name (robot)
+      "Get the ROBOT's name."
+      (cdr (assq :name robot)))
+
+    (defun reset-robot (robot)
+      "Reset the name of ROBOT.  Factory reset!"
+      (setcdr (assq :name robot) (generate-robot-name)))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> test-robot
+  "DC803"
+  ELISP> (setq test-robot (build-robot))
+  ((:name . "FB212"))
+
+  ELISP> test-robot
+  ((:name . "FB212"))
+
+  ELISP> (robot-name test-robot)
+  "FB212"
+  ELISP> (reset-robot test-robot)
+  "CR768"
+  ELISP> (robot-name test-robot)
+  "CR768"
+#+end_src
+
+That looks like it's working, although I seem to be failing the tests.
+
+#+begin_example
+  F.FF
+
+  F different-robots-have-different-names
+      (wrong-type-argument listp "AQ405")
+
+  F name-is-persistent
+      Test that robot name is persistent.
+      (wrong-type-argument listp "AQ405")
+
+  F name-matches-expected-pattern
+      (wrong-type-argument listp "AQ405")
+#+end_example
+
+#+begin_src emacs-lisp
+  ELISP> (type-of (robot-name test-robot))
+  string
+  ELISP> (equal (robot-name test-robot) (robot-name test-robot))
+  t
+  ELISP> (setq other-robot (build-robot))
+  ((:name . "AL272"))
+
+  ELISP> (not (equal (robot-name test-robot) (robot-name other-robot)))
+  t
+#+end_src
+
+That's even more confusing because I appear to be passing manual versions of
+the ERT tests in IELM.
+
+#+begin_example
+  F.FF
+
+  F different-robots-have-different-names
+      (wrong-type-argument listp "AQ405")
+
+  F name-is-persistent
+      Test that robot name is persistent.
+      (wrong-type-argument listp "AQ405")
+
+  F name-matches-expected-pattern
+      (wrong-type-argument listp "AQ405")
+#+end_example
+
+I just re-ran the tests, and it seems like I'm getting some weird persistent
+behavior, which doesn't make sense.
+
+I even explicitly called =ert-delete-all-tests= and then re-ran the test suite
+and got this:
+
+#+begin_example
+  F.FF
+
+  F different-robots-have-different-names
+      (wrong-type-argument listp "AQ405")
+
+  F name-is-persistent
+      Test that robot name is persistent.
+      (wrong-type-argument listp "AQ405")
+
+  F name-matches-expected-pattern
+      (wrong-type-argument listp "AQ405")
+#+end_example
+
+That makes no sense!
+
+Restarted Emacs, and now the tests pass ¯\_(ツ)_/¯
