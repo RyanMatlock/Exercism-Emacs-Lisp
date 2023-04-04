@@ -7,10 +7,17 @@
 (ert-deftest random-element-empty-list ()
   (should-not (random-element '())))
 
+;; (ert-deftest random-element-singleton-list ()
+;;   "This should at least verify that I'm not picking an element from past the
+;; end of the list -- nope, this only works if you run the test suite multiple
+;; times."
+;;   (should (equal :foo (random-element '(:foo)))))
+
 (ert-deftest random-element-singleton-list ()
-  "This should at least verify that I'm not picking an element from past the
-end of the list."
-  (should (equal :foo (random-element '(:foo)))))
+  (let ((elem :foo)
+        (num-lists 100))
+    (should (seq-every-p #'(lambda (lst) (equal elem (random-element lst)))
+                         (make-list num-lists (list elem))))))
 
 (ert-deftest random-element-never-nil ()
   (let ((list-of-lists (make-list 100 (number-sequence 0 1))))
