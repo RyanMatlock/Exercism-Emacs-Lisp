@@ -10,8 +10,12 @@
    (t (error "NUM must be a whole number."))))
 
 (defun armstrong-p (n)
-;;; Code:
-)
+  "Return T if number N is an Armstrong number, which is defined as a number
+whose digits raised to the power of the number of digits and summed is equal to
+the original number; otherwise, return NIL."
+  (let* ((digits (wholenum-to-digits n))
+         (power (length digits)))
+    (= n (apply #'+ (mapcar #'(lambda (x) (expt x power)) digits)))))
 
 (provide 'armstrong-numbers)
 ;;; armstrong-numbers.el ends here
