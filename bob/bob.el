@@ -33,8 +33,19 @@ otherwise, return NIL; error if SENTENCE is not a string."
         (t (error "SENTENCE must be a string."))))
 
 (defun response-for (phrase)
-;;; Code:
-  )
+  "For string PHRASE:
+If PHRASE is a question, respond with, 'Sure.'
+If PHRASE is all caps and punctuation, respond with, 'Whoa, chill out!'
+If PHRASE is an all caps question, respond with, 'Calm down, I know what I'm
+doing!'
+If PHRASE is the empty string, respond with, 'Fine. Be that way!'
+If PHRASE is anything else, respond with, 'Whatever.'"
+  (cond ((seq-empty-p phrase) "Fine. Be that way!")
+        ((and (all-letters-capital-p phrase) (questionp phrase))
+         "Calm down, I know what I'm doing!")
+        ((all-letters-capital-p phrase) "Whoa, chill out!")
+        ((questionp phrase) "Sure.")
+        (t "Whatever.")))
 
 (provide 'bob)
 ;;; bob.el ends here
