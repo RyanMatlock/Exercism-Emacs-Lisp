@@ -2,6 +2,7 @@
 
 (declare-function capitalp "bob.el" (c))
 (declare-function lowercasep "bob.el" (c))
+(declare-function whitespacep "bob.el" (c))
 (declare-function questionp "bob.el" (sentence))
 (declare-function all-letters-capital-p "bob.el" (sentence))
 
@@ -29,11 +30,20 @@
 (ert-deftest lowercasep-error-on-string ()
   (should-error (lowercasep "a")))
 
+(ert-deftest whitespacep-all-whitespace ()
+  (should (seq-every-p #'whitespacep "  \n\n\t \n \t")))
+
+(ert-deftest whitespacep-some-whitespace ()
+  (should-not (seq-every-p #'whitespacep " foo bar baz ")))
+
 (ert-deftest questionp-not-a-question ()
   (should-not (questionp "This is not a question.")))
 
 (ert-deftest questionp-question ()
   (should (questionp "Is this a question?")))
+
+(ert-deftest question-followed-by-whitespace ()
+  (should (questionp "Is this also a question?    ")))
 
 (ert-deftest questionp-not-a-string ()
   (should-error (questionp '("f" "o" "o" "?"))))

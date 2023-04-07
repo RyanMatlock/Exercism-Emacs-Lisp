@@ -16,12 +16,23 @@ NIL; error if C is not a char."
          (and (>= c ?a) (<= c ?z)))
         (t (error "C must be a char."))))
 
+(defun whitespacep (c)
+  (let ((whitespace-chars (mapcar #'string-to-char '(" " "\t" "\n"))))
+    (cond ((and (numberp c) (char-or-string-p c))
+           (seq-some #'(lambda (whitespace-char) (= whitespace-char c))
+                     whitespace-chars)))))
+
 (defun questionp (sentence)
   "Return T if string SENTENCE ends in '?'; otherwise return NIL; error if
 SENTENCE is not a string."
   (cond ((stringp sentence)
-         (let ((last (string (elt sentence (1- (length sentence))))))
-           (string= last "?")))
+         (let* ((sentence-no-ws (seq-filter
+                                 #'(lambda (c) (not (whitespacep c)))
+                                 sentence))
+                (last-non-whitespace
+                 (string (elt sentence-no-ws
+                              (1- (length sentence-no-ws))))))
+           (string= last-non-whitespace "?")))
         (t (error "SENTENCE must be a string."))))
 
 (defun all-letters-capital-p (sentence)
