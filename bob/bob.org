@@ -28,3 +28,289 @@
 
 +Use =seq-empty-p= instead.+ Actually, it's a little more complicated than just
 using =seq-empty-p=, but that's part of it.
+
+* First version
+
+#+begin_src emacs-lisp
+  (defun capitalp (c)
+    "Return T if char C is a capital letter (in range A-Z); otherwise, return
+  NIL; error if C is not a char."
+    (cond ((and (numberp c) (char-or-string-p c))
+           (and (>= c ?A) (<= c ?Z)))
+          (t (error "C must be a char."))))
+
+  (defun lowercasep (c)
+    "Return T if char C is a lowercase letter (in range a-z); otherwise, return
+  NIL; error if C is not a char."
+    (cond ((and (numberp c) (char-or-string-p c))
+           (and (>= c ?a) (<= c ?z)))
+          (t (error "C must be a char."))))
+
+  (defun whitespacep (c)
+    (let ((whitespace-chars (mapcar #'string-to-char '(" " "\t" "\n" "\r"))))
+      (cond ((and (numberp c) (char-or-string-p c))
+             (seq-some #'(lambda (whitespace-char) (= whitespace-char c))
+                       whitespace-chars)))))
+
+  (defun questionp (sentence)
+    "Return T if string SENTENCE ends in '?'; otherwise return NIL; error if
+  SENTENCE is not a string."
+    (cond ((stringp sentence)
+           (let* ((sentence-no-ws (seq-filter
+                                   #'(lambda (c) (not (whitespacep c)))
+                                   sentence))
+                  (last-non-whitespace
+                   (string (elt sentence-no-ws
+                                (1- (length sentence-no-ws))))))
+             (string= last-non-whitespace "?")))
+          (t (error "SENTENCE must be a string."))))
+
+  (defun all-letters-capital-p (sentence)
+    "Return T if string SENTENCE contains only capital letters and punctuation;
+  otherwise, return NIL; error if SENTENCE is not a string."
+    (cond ((stringp sentence)
+           (and (seq-some #'capitalp sentence)
+                (not (seq-some #'lowercasep sentence))))
+          (t (error "SENTENCE must be a string."))))
+
+  (defun response-for (phrase)
+    "For string PHRASE:
+  If PHRASE is a question, respond with, 'Sure.'
+  If PHRASE is all caps and punctuation, respond with, 'Whoa, chill out!'
+  If PHRASE is an all caps question, respond with, 'Calm down, I know what I'm
+  doing!'
+  If PHRASE is the empty string, respond with, 'Fine. Be that way!'
+  If PHRASE is anything else, respond with, 'Whatever.'"
+    (cond ((or (seq-empty-p phrase) (seq-every-p #'whitespacep phrase))
+           "Fine. Be that way!")
+          ((and (all-letters-capital-p phrase) (questionp phrase))
+           "Calm down, I know what I'm doing!")
+          ((all-letters-capital-p phrase) "Whoa, chill out!")
+          ((questionp phrase) "Sure.")
+          (t "Whatever.")))
+#+end_src
+
+The cool thing about this is that it's fairly modular (although I guess that's
+the whole idea of functional programming). As such, I can just modify
+=questionp= and =all-letters-capital-p= to use regular expressions, omit the
+single character checks, and still pass the tests.
+
+For future reference, here's the test suite for the helper functions:
+
+#+begin_src emacs-lisp
+  (load-file "bob.el")
+
+  (declare-function capitalp "bob.el" (c))
+  (declare-function lowercasep "bob.el" (c))
+  (declare-function whitespacep "bob.el" (c))
+  (declare-function questionp "bob.el" (sentence))
+  (declare-function all-letters-capital-p "bob.el" (sentence))
+
+  (ert-deftest capitalp-all-capital-letters ()
+    (should (seq-every-p #'capitalp (number-sequence ?A ?Z))))
+
+  (ert-deftest capitalp-fail-on-lowercase-char ()
+    (should-not (capitalp ?a)))
+
+  (ert-deftest capitalp-fail-on-punctuation-char ()
+    (should-not (capitalp (string-to-char "?"))))
+
+  (ert-deftest capitalp-error-on-string ()
+    (should-error (capitalp "A")))
+
+  (ert-deftest lowercasep-all-lowercase-letters ()
+    (should (seq-every-p #'lowercasep (number-sequence ?a ?z))))
+
+  (ert-deftest lowercasep-fail-on-uppercase-char ()
+    (should-not (lowercasep ?A)))
+
+  (ert-deftest lowercasep-fail-on-punctuation-char ()
+    (should-not (lowercasep (string-to-char "!"))))
+
+  (ert-deftest lowercasep-error-on-string ()
+    (should-error (lowercasep "a")))
+
+  (ert-deftest whitespacep-all-whitespace ()
+    (should (seq-every-p #'whitespacep "  \n\n\t \n \t\r")))
+
+  (ert-deftest whitespacep-some-whitespace ()
+    (should-not (seq-every-p #'whitespacep " foo bar baz ")))
+
+  (ert-deftest questionp-not-a-question ()
+    (should-not (questionp "This is not a question.")))
+
+  (ert-deftest questionp-question ()
+    (should (questionp "Is this a question?")))
+
+  (ert-deftest question-followed-by-whitespace ()
+    (should (questionp "Is this also a question?    ")))
+
+  (ert-deftest questionp-not-a-string ()
+    (should-error (questionp '("f" "o" "o" "?"))))
+
+  (ert-deftest all-letters-capital-p-you-maniacs ()
+    (should (all-letters-capital-p "YOU MANIACS! YOU BLEW IT UP!")))
+
+  (ert-deftest all-letters-capital-p-calm ()
+    (should-not (all-letters-capital-p "Oh hai")))
+
+  (ert-deftest all-letters-capital-p-list ()
+    (should-error (all-letters-capital-p '(?F ?O ?O ?B ?A ?R))))
+#+end_src
+
+Looks like I don't understand the regexp functions in Emacs Lisp very well.
+
+#+begin_src emacs-lisp
+  ELISP> (string-match-p "[A-Z]+" "foo bar")
+  0 (#o0, #x0, ?\C-@)
+  ELISP> (string-match-p "[A-Z]+" "FOO")
+  0 (#o0, #x0, ?\C-@)
+  ELISP> (string-match "[A-Z]+" "FOO")
+  0 (#o0, #x0, ?\C-@)
+  ELISP> (string-match-p "[[A-Z]+]" "FOO")
+  nil
+  ELISP> (string-match-p "[[A-Z]]+" "FOO")
+  nil
+  ELISP> (string-match-p "[[A-Z]]" "FOO")
+  nil
+#+end_src
+
+Ohhh, it's returning the index of the match.
+
+#+begin_src emacs-lisp
+  ELISP> (numberp (string-match-p "[A-Z]+" "foo"))
+  t
+#+end_src
+
+But that doesn't explain this.
+
+#+begin_src emacs-lisp
+  ELISP> (not (null (string-match-p "[0-9]+" "foo bar")))
+  nil
+#+end_src
+
+That looks good though.
+
+#+begin_src emacs-lisp
+  (defun re-string-match-p (regexp str &optional start)
+    "Works like STRING-MATCH-P except instead of returning an index when REGEXP
+  matches STR, it returns T; otherwise, it returns NIL."
+    (not (null (string-match-p regexp str start))))
+
+  (defun all-letters-capital-p (sentence)
+    "Return T if string SENTENCE contains only capital letters and punctuation;
+  otherwise, return NIL; error if SENTENCE is not a string."
+    (cond ((stringp sentence) (and
+                               ;; *some* capital letters
+                               (re-string-match-p "[A-Z]+" sentence)
+                               ;; AND *no* lowercase letters
+                               (re-string-match-p "[^a-z]+" sentence)))
+          (t (error "SENTENCE must be a string."))))
+#+end_src
+
+Not sure why this is failing. Well, I know where it's failing, but I don't know
+why:
+
+#+begin_example
+  F.........
+
+  F all-letters-capital-p-calm
+      (ert-test-failed
+       ((should-not
+         (all-letters-capital-p "Oh hai"))
+        :form
+        (all-letters-capital-p "Oh hai")
+        :value t))
+#+end_example
+
+Added a new test:
+
+#+begin_src emacs-lisp
+  (ert-deftest re-string-match-p-wrong-case ()
+    (should-not (re-string-match-p "^foo$" "FOO")))
+#+end_src
+
+#+begin_example
+  F.........F
+
+  F all-letters-capital-p-calm
+      (ert-test-failed
+       ((should-not
+         (all-letters-capital-p "Oh hai"))
+        :form
+        (all-letters-capital-p "Oh hai")
+        :value t))
+
+  F re-string-match-p-wrong-case
+      (ert-test-failed
+       ((should-not
+         (re-string-match-p "^foo$" "FOO"))
+        :form
+        (re-string-match-p "^foo$" "FOO")
+        :value t))
+#+end_example
+
+So there's clearly an issue with case sensitivity.
+
+Try setting =case-fold-search= to =nil=, although that's a buffer-local
+variable, so it may not work.
+
+#+begin_src emacs-lisp
+  (defun re-string-match-p (regexp str &optional start)
+    "Works like STRING-MATCH-P except instead of returning an index when REGEXP
+  matches STR, it returns T; otherwise, it returns NIL."
+    (let ((case-fold-search nil))
+      (not (null (string-match-p regexp str start)))))
+#+end_src
+
+#+begin_example
+  F..........
+
+  F all-letters-capital-p-calm
+      (ert-test-failed
+       ((should-not
+         (all-letters-capital-p "Oh hai"))
+        :form
+        (all-letters-capital-p "Oh hai")
+        :value t))
+#+end_example
+
+Hmm, maybe my logic in =all-letters-capital-p= is faulty.
+
+#+begin_src emacs-lisp
+  (defun all-letters-capital-p (sentence)
+    "Return T if string SENTENCE contains only capital letters and punctuation;
+  otherwise, return NIL; error if SENTENCE is not a string."
+    (cond ((stringp sentence) (and
+                               ;; *some* capital letters
+                               (re-string-match-p "[A-Z]+" sentence)
+                               ;; AND *no* lowercase letters
+                               (not (re-string-match-p "[a-z]+" sentence))))
+          (t (error "SENTENCE must be a string."))))
+#+end_src
+
+That seems to have fixed it.
+
+Now I'm only failing one test:
+
+#+begin_example
+  ......F..................
+
+  F responds-to-multiple-line-question
+      (ert-test-failed
+       ((should
+         (string= "Whatever."
+                  (response-for "\nDoes this cryogenic chamber make me look fat?\nno")))
+        :form
+        (string= "Whatever." "Fine. Be that way!")
+        :value nil))
+#+end_example
+
+It seems to think that the whole phrase is just that first newline.
+
+Let's just replace newlines with spaces:
+
+#+begin_src emacs-lisp
+  ELISP> (string-replace "\n" " " "\nFoo\nBar\nBaz\n")
+  " Foo Bar Baz "
+#+end_src
