@@ -1,0 +1,30 @@
+#+title: Bob
+
+* Missteps
+~bob.el~:
+
+#+begin_src emacs-lisp
+  (defun empty-string-p (str)
+    "Return T if string STR is empty; otherwise return NIL; error if STR is not a
+  string."
+    (cond ((stringp str) (string= str ""))
+          (t (error "STR must be a string."))))
+#+end_src
+
+~bob-additional-tests.el~:
+
+#+begin_src emacs-lisp
+  (declare-function empty-string-p "bob.el" (str))
+
+  (ert-deftest empty-string-p-empty-string ()
+    (should (empty-string-p "")))
+
+  (ert-deftest empty-string-p-non-empty-string ()
+    (should-not (empty-string-p ".")))
+
+  (ert-deftest empty-string-p-non-string ()
+    (should-error (empty-string-p '())))
+#+end_src
+
++Use =seq-empty-p= instead.+ Actually, it's a little more complicated than just
+using =seq-empty-p=, but that's part of it.
