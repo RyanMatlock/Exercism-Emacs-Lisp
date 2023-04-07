@@ -2,6 +2,7 @@
 
 (declare-function capitalp "bob.el" (c))
 (declare-function questionp "bob.el" (sentence))
+(declare-function empty-string-p "bob.el" (str))
 
 (ert-deftest capitalp-all-capital-letters ()
   (should (seq-every-p #'capitalp (number-sequence ?A ?Z))))
@@ -23,3 +24,12 @@
 
 (ert-deftest questionp-not-a-string ()
   (should-error (questionp '("f" "o" "o" "?"))))
+
+(ert-deftest empty-string-p-empty-string ()
+  (should (empty-string-p "")))
+
+(ert-deftest empty-string-p-non-empty-string ()
+  (should-not (empty-string-p ".")))
+
+(ert-deftest empty-string-p-non-string ()
+  (should-error (empty-string-p '())))
