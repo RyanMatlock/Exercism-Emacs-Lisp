@@ -17,7 +17,7 @@ NIL; error if C is not a char."
         (t (error "C must be a char."))))
 
 (defun whitespacep (c)
-  (let ((whitespace-chars (mapcar #'string-to-char '(" " "\t" "\n"))))
+  (let ((whitespace-chars (mapcar #'string-to-char '(" " "\t" "\n" "\r"))))
     (cond ((and (numberp c) (char-or-string-p c))
            (seq-some #'(lambda (whitespace-char) (= whitespace-char c))
                      whitespace-chars)))))
@@ -51,7 +51,8 @@ If PHRASE is an all caps question, respond with, 'Calm down, I know what I'm
 doing!'
 If PHRASE is the empty string, respond with, 'Fine. Be that way!'
 If PHRASE is anything else, respond with, 'Whatever.'"
-  (cond ((seq-empty-p phrase) "Fine. Be that way!")
+  (cond ((or (seq-empty-p phrase) (seq-every-p #'whitespacep phrase))
+         "Fine. Be that way!")
         ((and (all-letters-capital-p phrase) (questionp phrase))
          "Calm down, I know what I'm doing!")
         ((all-letters-capital-p phrase) "Whoa, chill out!")

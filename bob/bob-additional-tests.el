@@ -31,7 +31,7 @@
   (should-error (lowercasep "a")))
 
 (ert-deftest whitespacep-all-whitespace ()
-  (should (seq-every-p #'whitespacep "  \n\n\t \n \t")))
+  (should (seq-every-p #'whitespacep "  \n\n\t \n \t\r")))
 
 (ert-deftest whitespacep-some-whitespace ()
   (should-not (seq-every-p #'whitespacep " foo bar baz ")))
