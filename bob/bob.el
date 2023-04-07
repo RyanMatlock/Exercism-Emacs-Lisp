@@ -2,26 +2,6 @@
 
 ;;; Commentary:
 
-;; (defun capitalp (c)
-;;   "Return T if char C is a capital letter (in range A-Z); otherwise, return
-;; NIL; error if C is not a char."
-;;   (cond ((and (numberp c) (char-or-string-p c))
-;;          (and (>= c ?A) (<= c ?Z)))
-;;         (t (error "C must be a char."))))
-
-;; (defun lowercasep (c)
-;;   "Return T if char C is a lowercase letter (in range a-z); otherwise, return
-;; NIL; error if C is not a char."
-;;   (cond ((and (numberp c) (char-or-string-p c))
-;;          (and (>= c ?a) (<= c ?z)))
-;;         (t (error "C must be a char."))))
-
-;; (defun whitespacep (c)
-;;   (let ((whitespace-chars (mapcar #'string-to-char '(" " "\t" "\n" "\r"))))
-;;     (cond ((and (numberp c) (char-or-string-p c))
-;;            (seq-some #'(lambda (whitespace-char) (= whitespace-char c))
-;;                      whitespace-chars)))))
-
 (defun re-string-match-p (regexp str &optional start)
   "Works like STRING-MATCH-P except instead of returning an index when REGEXP
 matches STR, it returns T; otherwise, it returns NIL."
