@@ -13,6 +13,7 @@ satisfy the numerical requirements."
            (seq-filter #'(lambda (x) (and (factorp n x)
                                           (not (= n x))))
                        possible-factors)))
+        ;; error handling not actually necessary
         (t (error "N must be an integer > 0."))))
 
 (defun aliquot-sum (n)
@@ -20,8 +21,17 @@ satisfy the numerical requirements."
   (apply #'+ (factors n)))
 
 (defun classify (number)
-;;; Code:
-  )
+  "Classify NUMBER as 'PERFECT if it equal to its aliquot sum; 'ABUNDANT if it
+is less than its aliquot sum, and 'DEFICIENT if it is greater than its aliquot
+sum."
+  (cond ((and (wholenump number)
+              (not (zerop number)))
+         (let ((aliquot (aliquot-sum number)))
+           (cond ((= number aliquot) 'perfect)
+                 ((< number aliquot) 'abundant)
+                 ((> number aliquot) 'deficient)
+                 (t (error "Not sure what happened here.")))))
+        (t (error "Classification is only possible for natural numbers"))))
 
 (provide 'perfect-numbers)
 ;;; perfect-numbers.el ends here
