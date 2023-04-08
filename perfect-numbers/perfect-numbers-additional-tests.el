@@ -10,7 +10,7 @@
   (should-error (factors 0)))
 
 (ert-deftest factors-of-1 ()
-  (should (equal '(1) (factors 1))))
+  (should (equal '() (factors 1))))
 
 (ert-deftest factors-of-2 ()
   (should (equal '(1) (factors 2))))

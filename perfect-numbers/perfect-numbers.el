@@ -10,7 +10,9 @@ satisfy the numerical requirements."
   (cond ((and (wholenump n) (not (zerop n)))
          (let* ((stop (max 1 (/ n 2)))
                 (possible-factors (number-sequence 1 stop)))
-           (seq-filter #'(lambda (x) (factorp n x)) possible-factors)))
+           (seq-filter #'(lambda (x) (and (factorp n x)
+                                          (not (= n x))))
+                       possible-factors)))
         (t (error "N must be an integer > 0."))))
 
 (defun aliquot-sum (n)
