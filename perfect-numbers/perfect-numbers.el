@@ -13,6 +13,10 @@ satisfy the numerical requirements."
            (seq-filter #'(lambda (x) (factorp n x)) possible-factors)))
         (t (error "N must be an integer > 0."))))
 
+(defun aliquot-sum (n)
+  "Return the sum of the factors of N excluding N itself."
+  (apply #'+ (factors n)))
+
 (defun classify (number)
 ;;; Code:
   )
