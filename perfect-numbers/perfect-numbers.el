@@ -2,8 +2,9 @@
 
 ;;; Commentary:
 
-;; stolen from
+;; referenced
 ;; https://exercism.org/tracks/emacs-lisp/exercises/perfect-numbers/solutions/bkaestner
+;; in order to come up with this solution
 (defun factors (n)
   "Return the factors of nonzero whole number N excluding N."
 
@@ -11,20 +12,25 @@
     (zerop (mod n maybe-factor)))
 
   (cond ((> n 1)
-         (let ((stop (floor (sqrt n)))
-               (maybe-factor 2)
-               (factors (list 1)))
-           (while (<= maybe-factor stop)
-             ;; this is all very side effect-y
-             (cond ((and (factorp maybe-factor)
-                         ;; check if (= maybe-factor (sqrt n))
-                         (= n (* maybe-factor maybe-factor)))
-                    (push maybe-factor factors))
-                   ((factorp maybe-factor)
-                    (push maybe-factor factors)
-                    (push (/ n maybe-factor) factors)))
-             ;; as is this
-             (setq maybe-factor (1+ maybe-factor)))
+         (let* ((stop (floor (sqrt n)))
+                (maybe-factors (number-sequence 2 stop))
+                (factors (list 1)))
+           (mapc #'(lambda (maybe-factor)
+                     ;; only doing this let so I don't have to do the factorp
+                     ;; calculation twice
+                     (let ((factorp-result (factorp maybe-factor)))
+                       (cond ((and factorp-result
+                                   (= n (* maybe-factor maybe-factor)))
+                              ;; push maybe-factor once if it's the square root
+                              ;; of n
+                              (push maybe-factor factors))
+                             (factorp-result (progn
+                                               (push maybe-factor factors)
+                                               (push (/ n maybe-factor)
+                                                     factors))))))
+                 maybe-factors)
+           ;; not really necessary to sort them, but it's nicer for visually
+           ;; inspecting the output
            (sort factors #'<)))
         (t '())))
 
