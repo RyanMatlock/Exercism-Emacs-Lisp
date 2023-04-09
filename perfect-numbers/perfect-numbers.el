@@ -92,6 +92,30 @@ satisfy the numerical requirements."
          (possible-factors (number-sequence 1 stop)))
     (factors-helper possible-factors '())))
 
+(defun factors (n)
+  "Return the factors of nonzero whole number N excluding N."
+
+  (defun factorp (maybe-factor)
+    (zerop (mod n maybe-factor)))
+
+  (cond ((> n 1)
+         (let ((stop (floor (sqrt n)))
+               (maybe-factor 2)
+               (factors (list 1)))
+           (while (<= maybe-factor stop)
+             ;; this is all very side effect-y
+             (cond ((and (factorp maybe-factor)
+                         ;; check if (= maybe-factor (sqrt n))
+                         (= n (* maybe-factor maybe-factor)))
+                    (push maybe-factor factors))
+                   ((factorp maybe-factor)
+                    (push maybe-factor factors)
+                    (push (/ n maybe-factor) factors)))
+             ;; as is this
+             (setq maybe-factor (1+ maybe-factor)))
+           (sort factors #'<)))
+        (t '())))
+
 (defun aliquot-sum (n)
   "Return the sum of the factors of N excluding N itself."
   (apply #'+ (factors n)))
