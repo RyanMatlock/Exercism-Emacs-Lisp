@@ -1,0 +1,86 @@
+#+title: Pangram
+
+* First attempt
+
+#+begin_src emacs-lisp
+  (defun pangramp (phrase)
+    "Return T if phrase contains every letter of the alphabet; otherwise, return
+  NIL."
+    (let* ((alpha (number-sequence ?a ?z))
+           (alpha-alist (mapcar #'(lambda (c) (cons c nil)) alpha)))
+      (seq-mapn #'(lambda (c) (setcdr (assq c alpha-alist) t)) phrase)
+      (seq-every-p #'(lambda (aa-elem) (cdr aa-elem)) alpha-alist)))
+#+end_src
+
+Make an alist of the alphabet where each letter is a key and each value is
+=nil=; go through each letter of the phrase, set the value of the key (letter)
+to =t=; check that every =cdr= is =t=.
+
+#+begin_example
+  FFFFFFFF..
+
+  F a-m-and-A-M-are-26-different-characters-but-not-a-pangram
+      (wrong-type-argument consp nil)
+
+  F missing-another-character-eg-h
+      (wrong-type-argument consp nil)
+
+  F missing-character-x
+      (wrong-type-argument consp nil)
+
+  F missing-letters-replaced-by-numbers
+      (wrong-type-argument consp nil)
+
+  F pangram-with-mixed-case-and-punctuation
+      (wrong-type-argument consp nil)
+
+  F pangram-with-numbers
+      (wrong-type-argument consp nil)
+
+  F pangram-with-only-lower-case
+      (wrong-type-argument consp nil)
+
+  F pangram-with-underscores
+      (wrong-type-argument consp nil)
+#+end_example
+
+Guess I need to print to debug.
+
+#+begin_src emacs-lisp
+  ELISP> (pangramp "aksjdflaksjflkjas;lkfdjawoiruklajs;dfnvmx,nerq;wjepasdf")
+  ,*** Eval error ***  Wrong type argument: consp, nil
+#+end_src
+
+Ah, unexpected characters throw it off! Mostly fixed:
+
+#+begin_src emacs-lisp
+  (defun pangramp (phrase)
+    "Return T if phrase contains every letter of the alphabet; otherwise, return
+  NIL."
+    (let* ((alpha (number-sequence ?a ?z))
+           (alpha-alist (mapcar #'(lambda (c) (cons c nil)) alpha)))
+      (seq-mapn #'(lambda (c)
+                    (let ((entry (assq c alpha-alist)))
+                      (if entry
+                          (setcdr entry t)
+                        nil)))
+                phrase)
+      ;; (print (format "alpha-alist: %s" alpha-alist))
+      (seq-every-p #'(lambda (aa-elem) (cdr aa-elem)) alpha-alist)))
+#+end_src
+
+#+begin_example
+  ....F.....
+
+  F pangram-with-mixed-case-and-punctuation
+      (ert-test-failed
+       ((should
+         (equal t
+                (pangramp "\"Five quacking Zephyrs jolt my wax bed.\"")))
+        :form
+        (equal t nil)
+        :value nil :explanation
+        (different-atoms t nil)))
+#+end_example
+
+Just need to convert =phrase= to lowercase.
