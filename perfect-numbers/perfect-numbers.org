@@ -267,3 +267,93 @@ instead.
 
 [[https://codeforces.com/blog/entry/84036?#comment-714607][Method for finding factors of a number in $O(\log(n))$ or less?]] has some useful
 info; looks like I can't do this in $O(\log n)$ time.
+
+I think I need to give up and consult the community solutions for this.
+
+Ah, I didn't consider checking only up to $\sqrt{n}lo$ and then building the list
+of factors by pushing onto a list (both the "small" factor and the "large"
+factor, which may be $>\sqrt{n}$; see [[https://exercism.org/tracks/emacs-lisp/exercises/perfect-numbers/solutions/bkaestner][bkaestner's solution]].
+
+#+begin_src emacs-lisp
+  (defun factors (n)
+    "Return the factors of nonzero whole number N excluding N."
+
+    (defun factorp (n maybe-factor)
+      (zerop (mod n maybe-factor)))
+
+    (let ((stop (floor (sqrt n)))
+          (maybe-factor 2)
+          (factors (list 1)))
+      (while (<= maybe-factor stop)
+        (print (format (concat "maybe-factor: %d\n"
+                               "factors: %s")
+                       maybe-factor
+                       factors))
+        (if (factorp n maybe-factor)
+            (progn (push maybe-factor factors)
+                   (push (/ n maybe-factor) factors)))
+        (setq maybe-factor (1+ maybe-factor)))
+      (sort factors #'<)))
+#+end_src
+
+This feels more like something I'd write in Python than Lisp or another
+functional language, but it's fast.
+
+#+begin_src emacs-lisp
+  ELISP> (factors 12)
+  (1 2 3 4 6)
+
+  ELISP> (factors 82391)
+  (1 47 1753)
+
+  ELISP> (factors 2893128)
+  (1 2 3 4 6 7 8 12 14 17 21 24 28 34 42 51 56 68 84 102 119 136 168 204 238 357
+     408 476 714 952 1013 1428 2026 2856 3039 4052 6078 7091 8104 12156 14182
+     17221 21273 24312 28364 34442 42546 51663 56728 68884 85092 103326 120547
+     137768 170184 206652 241094 361641 413304 482188 723282 964376 1446564)
+#+end_src
+
+That last one only took less than ten seconds.
+
+Ah, I found a bug:
+
+#+begin_src emacs-lisp
+  ELISP> (aliquot-sum 4)
+  5 (#o5, #x5, ?\C-e)
+  ELISP> (factors 4)
+  (1 2 2)
+#+end_src
+
+Just have to check if $p_{}^2 = n$, where $p$ is a maybe-factor of $n$.
+
+Final cleanup of factors:
+
+#+begin_src emacs-lisp
+  (defun factors (n)
+    "Return the factors of nonzero whole number N excluding N."
+
+    (defun factorp (maybe-factor)
+      (zerop (mod n maybe-factor)))
+
+    (cond ((> n 1)
+           (let ((stop (floor (sqrt n)))
+                 (maybe-factor 2)
+                 (factors (list 1)))
+             (while (<= maybe-factor stop)
+               ;; this is all very side effect-y
+               (cond ((and (factorp maybe-factor)
+                           ;; check if (= maybe-factor (sqrt n))
+                           (= n (* maybe-factor maybe-factor)))
+                      (push maybe-factor factors))
+                     ((factorp maybe-factor)
+                      (push maybe-factor factors)
+                      (push (/ n maybe-factor) factors)))
+               ;; as is this
+               (setq maybe-factor (1+ maybe-factor)))
+             (sort factors #'<)))
+          (t '())))
+#+end_src
+
+Again, all credit to Exercism user bkaestner (couldn't find their profile). It
+worked incredibly quickly, and I didn't realize that you could perform
+computations so quickly with this impure style.
