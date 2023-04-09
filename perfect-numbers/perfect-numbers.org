@@ -357,3 +357,10 @@ Final cleanup of factors:
 Again, all credit to Exercism user bkaestner (couldn't find their profile). It
 worked incredibly quickly, and I didn't realize that you could perform
 computations so quickly with this impure style.
+
+Now that I think about it, I could combine the first and stolen version of
+=factors=: create a number sequence from 1 to $\sqrt{n}$ and then push onto
+=factors= using a =lambda= on that sequence---no =while= or =setq= required
+(still need to =push= though).
+
+Yep, that works.
