@@ -1,0 +1,359 @@
+#+title: Perfect Numbers
+
+* Exercism timeout
+Admittedly, the tests ran slowly with this code:
+
+#+begin_src emacs-lisp
+  (defun factors (n)
+    "Return the factors of nonzero whole number N excluding N; error if N doesn't
+  satisfy the numerical requirements."
+    (defun factorp (n factor)
+      (zerop (mod n factor)))
+    (cond ((and (wholenump n) (not (zerop n)))
+           (let* ((stop (max 1 (/ n 2)))
+                  (possible-factors (number-sequence 1 stop)))
+             (seq-filter #'(lambda (x) (and (factorp n x)
+                                            (not (= n x))))
+                         possible-factors)))
+          ;; error handling not actually necessary
+          (t (error "N must be an integer > 0."))))
+
+  (defun aliquot-sum (n)
+    "Return the sum of the factors of N excluding N itself."
+    (apply #'+ (factors n)))
+
+  (defun classify (number)
+    "Classify NUMBER as 'PERFECT if it equal to its aliquot sum; 'ABUNDANT if it
+  is less than its aliquot sum, and 'DEFICIENT if it is greater than its aliquot
+  sum."
+    (cond ((and (wholenump number)
+                (not (zerop number)))
+           (let ((aliquot (aliquot-sum number)))
+             (cond ((= number aliquot) 'perfect)
+                   ((< number aliquot) 'abundant)
+                   ((> number aliquot) 'deficient)
+                   (t (error "Not sure what happened here.")))))
+          (t (error "Classification is only possible for natural numbers"))))
+#+end_src
+
+I seem to have made it even slower:
+
+#+begin_src emacs-lisp
+  (defun factors (n)
+    "Return the factors of nonzero whole number N excluding N; error if N doesn't
+  satisfy the numerical requirements."
+    (defun factorp (num factor)
+      (zerop (mod num factor)))
+    (defun factors-helper (possible-factors index)
+      (if (< index (length possible-factors))
+          (let ((possible-factor (elt possible-factors index)))
+            (if (factorp n possible-factor)
+                (factors-helper possible-factors (1+ index))
+              ;; (print (format (concat "possible-factors %s\n"
+              ;;                        "possible-factor: %d\n"
+              ;;                        "index: %d")
+              ;;                possible-factors
+              ;;                possible-factor
+              ;;                index))
+              (factors-helper (seq-filter
+                               #'(lambda (x)
+                                   (not (factorp x possible-factor)))
+                               possible-factors)
+                              index)))
+        possible-factors))
+    (cond ((<= n 1) '())
+          (t (let* ((stop (max 1 (/ n 2)))
+                    (possible-factors (number-sequence 1 stop)))
+               (factors-helper possible-factors 0)))))
+
+  (defun aliquot-sum (n)
+    "Return the sum of the factors of N excluding N itself."
+    (apply #'+ (factors n)))
+
+  (defun classify (number)
+    "Classify NUMBER as 'PERFECT if it equal to its aliquot sum; 'ABUNDANT if it
+  is less than its aliquot sum, and 'DEFICIENT if it is greater than its aliquot
+  sum."
+    (cond ((and (wholenump number)
+                (not (zerop number)))
+           (let ((aliquot (aliquot-sum number)))
+             (cond ((= number aliquot) 'perfect)
+                   ((< number aliquot) 'abundant)
+                   ((> number aliquot) 'deficient)
+                   (t (error "Not sure what happened here.")))))
+          (t (error "Classification is only possible for natural numbers"))))
+#+end_src
+
+Well, I guess you could do a sieve using a hash table where each possible
+factor is the key and the value is =t= or =nil=. Upon finding out that a
+possible factor isn't a factor, you could set the values of that factor and all
+multiples of that factor to =nil=, and any factor whose value is =nil= isn't
+visited. That /might/ speed things up for large numbers, but it might not
+because there's still a lot of work being done. Maybe checking a hash table's
+value is less computationally intensive than doing all those modulo operations
+though? Then again, maybe not since you still have to do a lot of
+multiplication.
+
++Another option: prime factorization and then multiplying every combination of
+primes less than half of the number that's factored (sounds computationally
+intensive).+
+
++Or what if I didn't factor the number at all? Maybe there's a way of
+classifying the number without calculating its primes or possibly even its
+aliquot sum.+ I don't think so.
+
+Just as a sanity check, the tests run essentially instantly with the first
+version of =factors= on small and medium-sized numbers (although the latter are
+still pretty small).
+
+I guess I should try a recursive algorithm since that's more tree-like and
+possibly faster.
+
+Here's another idea:
+
+#+begin_src emacs-lisp
+  (defun factors (n)
+    "Return the factors of nonzero whole number N excluding N."
+    (defun factorp (factor)
+      (zerop (mod n factor)))
+    ;; (let ((stop (/ n 2))))
+    (defun factors-helper (maybe-factor factors)
+      (let ((stop (apply #'max factors)))
+        (cond ((and (<= maybe-factor stop)
+                    (factorp maybe-factor))
+               (let* ((other-factor (/ n maybe-factor))
+                      (new-factors (list maybe-factor other-factor)))
+                 (factors-helper (1+ maybe-factor) (append factors
+                                                           new-factors))))
+              ((<= maybe-factor stop)
+               (factors-helper (1+ maybe-factor) factors))
+              (t factors))))
+    (factors-helper 2 (list 1 n)))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (factors 12)
+  (1 12 2 6 3 4 4 3 6 2 12 1)
+#+end_src
+
+So I just need to make =stop= the last element. Well, I need to do a little
+more than that.
+
+#+begin_src emacs-lisp
+  (defun factors (n)
+    "Return the factors of nonzero whole number N excluding N."
+    (defun factorp (factor)
+      (zerop (mod n factor)))
+    (defun factors-helper (maybe-factor factors)
+      (let ((stop (car (last factors))))
+        (cond ((and (< maybe-factor stop)
+                    (factorp maybe-factor))
+               (let* ((other-factor (/ n maybe-factor))
+                      (new-factors (list maybe-factor other-factor)))
+                 (factors-helper (1+ maybe-factor) (append factors
+                                                           new-factors))))
+              ((< maybe-factor stop)
+               (factors-helper (1+ maybe-factor) factors))
+              (t factors))))
+    (factors-helper 2 (list 1 n)))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (factors 12)
+  (1 12 2 6 3 4)
+#+end_src
+
+But look at that, no repeated elements!
+
+Bad news:
+
+#+begin_src emacs-lisp
+  ELISP> (factors 33550336)
+  ,*** Eval error ***  Lisp nesting exceeds ‘max-lisp-eval-depth’
+#+end_src
+
+Really bad news in fact:
+
+#+begin_src emacs-lisp
+  ELISP> (factors 238432)
+  ,*** Eval error ***  Lisp nesting exceeds ‘max-lisp-eval-depth’
+  ELISP> (factors 23824)
+  ,*** Eval error ***  Lisp nesting exceeds ‘max-lisp-eval-depth’
+  ELISP> (factors 2382)
+  ,*** Eval error ***  Lisp nesting exceeds ‘max-lisp-eval-depth’
+  ELISP> (factors 724)
+  (1 724 2 362 4 181)
+#+end_src
+
+Wanted to ensure I could easily pass the additional tests:
+
+#+begin_src emacs-lisp
+  (defun factors (n)
+    "Return the factors of nonzero whole number N excluding N."
+    (defun factorp (factor)
+      (zerop (mod n factor)))
+    ;; (let ((stop (/ n 2))))
+    (defun factors-helper (maybe-factor factors)
+      (let ((stop (car (last factors))))
+        (cond ((and (< maybe-factor stop)
+                    (factorp maybe-factor))
+               (let* ((other-factor (/ n maybe-factor))
+                      (new-factors (list maybe-factor other-factor)))
+                 (factors-helper (1+ maybe-factor) (append factors
+                                                           new-factors))))
+              ((< maybe-factor stop)
+               (factors-helper (1+ maybe-factor) factors))
+              (t (butlast (sort factors #'<))))))
+    (cond ((= n 1) '())
+          (t (factors-helper 2 (list 1 n)))))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (factors 724)
+  (1 2 4 181 362)
+
+  ELISP> (factors 2000)
+  (1 2 4 5 8 10 16 20 25 40 50 80 100 125 200 250 400 500 1000)
+
+  ELISP> (factors 2500)
+  (1 2 4 5 10 20 25 50 50 100 125 250 500 625 1250)
+
+  ELISP> (factors 33550336)
+  ,*** Eval error ***  Lisp nesting exceeds ‘max-lisp-eval-depth’
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (factors-v1 33550336)
+  (1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8191 16382 32764 65528 131056
+     262112 524224 1048448 2096896 4193792 8387584 16775168)
+#+end_src
+
+That takes ~30-40 seconds on my laptop.
+
+#+begin_src emacs-lisp
+  (defun factors-v3 (n)
+    "Return the factors of nonzero whole number N excluding N; error if N doesn't
+  satisfy the numerical requirements."
+
+    (defun factorp (n maybe-factor)
+      (zerop (mod n maybe-factor)))
+
+    (defun factors-helper (possible-factors acc)
+      (let ((pf (car possible-factors)))
+        (cond ((and pf (factorp n pf))
+               (factors-helper (cdr possible-factors) (cons pf acc)))
+              (pf
+               (factors-helper (seq-filter #'(lambda (x) (not (factorp x pf)))
+                                           possible-factors)
+                               acc))
+              (t (reverse acc)))))
+    (let* ((stop (max 1 (/ n 2)))
+           (possible-factors (number-sequence 1 stop)))
+      (factors-helper possible-factors '())))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (factors-v3 33550336)
+  ,*** Eval error ***  Quit during evaluation
+#+end_src
+
+After ~2 minutes.
+
+It's no surprise that this takes so long because in =factors-v1=, I'm just
+filtering =possible-factors= once, but in this case, I'm doing it multiple
+times, so by trying to shrink the list, I'm actually doing more work. I think I
+need to give up on filtering and work on building up the list of factors
+instead.
+
+[[https://codeforces.com/blog/entry/84036?#comment-714607][Method for finding factors of a number in $O(\log(n))$ or less?]] has some useful
+info; looks like I can't do this in $O(\log n)$ time.
+
+I think I need to give up and consult the community solutions for this.
+
+Ah, I didn't consider checking only up to $\sqrt{n}lo$ and then building the list
+of factors by pushing onto a list (both the "small" factor and the "large"
+factor, which may be $>\sqrt{n}$; see [[https://exercism.org/tracks/emacs-lisp/exercises/perfect-numbers/solutions/bkaestner][bkaestner's solution]].
+
+#+begin_src emacs-lisp
+  (defun factors (n)
+    "Return the factors of nonzero whole number N excluding N."
+
+    (defun factorp (n maybe-factor)
+      (zerop (mod n maybe-factor)))
+
+    (let ((stop (floor (sqrt n)))
+          (maybe-factor 2)
+          (factors (list 1)))
+      (while (<= maybe-factor stop)
+        (print (format (concat "maybe-factor: %d\n"
+                               "factors: %s")
+                       maybe-factor
+                       factors))
+        (if (factorp n maybe-factor)
+            (progn (push maybe-factor factors)
+                   (push (/ n maybe-factor) factors)))
+        (setq maybe-factor (1+ maybe-factor)))
+      (sort factors #'<)))
+#+end_src
+
+This feels more like something I'd write in Python than Lisp or another
+functional language, but it's fast.
+
+#+begin_src emacs-lisp
+  ELISP> (factors 12)
+  (1 2 3 4 6)
+
+  ELISP> (factors 82391)
+  (1 47 1753)
+
+  ELISP> (factors 2893128)
+  (1 2 3 4 6 7 8 12 14 17 21 24 28 34 42 51 56 68 84 102 119 136 168 204 238 357
+     408 476 714 952 1013 1428 2026 2856 3039 4052 6078 7091 8104 12156 14182
+     17221 21273 24312 28364 34442 42546 51663 56728 68884 85092 103326 120547
+     137768 170184 206652 241094 361641 413304 482188 723282 964376 1446564)
+#+end_src
+
+That last one only took less than ten seconds.
+
+Ah, I found a bug:
+
+#+begin_src emacs-lisp
+  ELISP> (aliquot-sum 4)
+  5 (#o5, #x5, ?\C-e)
+  ELISP> (factors 4)
+  (1 2 2)
+#+end_src
+
+Just have to check if $p_{}^2 = n$, where $p$ is a maybe-factor of $n$.
+
+Final cleanup of factors:
+
+#+begin_src emacs-lisp
+  (defun factors (n)
+    "Return the factors of nonzero whole number N excluding N."
+
+    (defun factorp (maybe-factor)
+      (zerop (mod n maybe-factor)))
+
+    (cond ((> n 1)
+           (let ((stop (floor (sqrt n)))
+                 (maybe-factor 2)
+                 (factors (list 1)))
+             (while (<= maybe-factor stop)
+               ;; this is all very side effect-y
+               (cond ((and (factorp maybe-factor)
+                           ;; check if (= maybe-factor (sqrt n))
+                           (= n (* maybe-factor maybe-factor)))
+                      (push maybe-factor factors))
+                     ((factorp maybe-factor)
+                      (push maybe-factor factors)
+                      (push (/ n maybe-factor) factors)))
+               ;; as is this
+               (setq maybe-factor (1+ maybe-factor)))
+             (sort factors #'<)))
+          (t '())))
+#+end_src
+
+Again, all credit to Exercism user bkaestner (couldn't find their profile). It
+worked incredibly quickly, and I didn't realize that you could perform
+computations so quickly with this impure style.
