@@ -3,8 +3,15 @@
 ;;; Commentary:
 
 (defun trinary-to-decimal (string)
-;;; Code:
-)
+  "Convert STRING representing a trinary number to its decimal equivalent; if
+STRING contains invalid characters (i.e. other than 0, 1, or 2), return 0."
+  (let ((base 3)
+        (power (1- (length string))))
+    (apply #'+ (seq-mapn #'(lambda (n index)
+                             (* (string-to-number (string n))
+                                (expt 3 (- power index))))
+                         string
+                         (number-sequence 0 power)))))
 
 (provide 'trinary)
 ;;; trinary.el ends here
