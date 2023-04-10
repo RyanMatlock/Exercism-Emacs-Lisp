@@ -1,0 +1,39 @@
+#+title: Trinary
+
+* First attempt
+
+This passes:
+
+#+begin_src emacs-lisp
+  (defun trinary-to-decimal (string)
+    "Convert STRING representing a trinary number to its decimal equivalent; if
+  STRING contains invalid characters (i.e. other than 0, 1, or 2), return 0."
+    (cond ((= (length string)
+              (length (seq-filter #'(lambda (c) (or (= c ?0)
+                                                    (= c ?1)
+                                                    (= c ?2)))
+                                  string)))
+           (let ((base 3)
+                 (power (1- (length string))))
+             (apply #'+ (seq-mapn #'(lambda (n index)
+                                      (* (string-to-number (string n))
+                                         (expt 3 (- power index))))
+                                  string
+                                  (number-sequence 0 power)))))
+          (t 0)))
+#+end_src
+
+But maybe I should use a regexp to validate the input.
+
+#+begin_src emacs-lisp
+  ELISP> (let ((invalid-trinary "102foo01"))
+           (if (string-match-p "^[012]+$" invalid-trinary)
+               :valid
+             :invalid))
+  :invalid
+  ELISP> (let ((valid-trinary "10221211001101"))
+           (if (string-match-p "^[012]+$" valid-trinary)
+               :valid
+             :invalid))
+  :valid
+#+end_src
