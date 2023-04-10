@@ -37,3 +37,32 @@ But maybe I should use a regexp to validate the input.
              :invalid))
   :valid
 #+end_src
+
+* The community does it better
+[[https://exercism.org/tracks/emacs-lisp/exercises/trinary/solutions/maurelio1234][maurelio1234's solution]]:
+
+#+begin_src emacs-lisp
+  (require 'cl-lib)
+
+  (defun trinary-to-decimal (s)
+    (if (string-match "[012]+$" s)
+        (seq-reduce
+         (lambda
+           (acc c)
+           (+ (* 3 acc) (- c ?0)))
+         s
+         0)
+      0))
+#+end_src
+
+=seq-reduce= is nicer than =(apply #'+ (seq-mapn ...))=, doing the subtraction
+on the char is nicer than =(string-to-number (string n))=, although I might've
+done it as
+
+#+begin_src emacs-lisp
+  (defun char-to-num (c)
+    (- c ?0))
+#+end_src
+
+just to make things more explicit (Pythonic habits die hard, and I'm not
+playing code golf).
