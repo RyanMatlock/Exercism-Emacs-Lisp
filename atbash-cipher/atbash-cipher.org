@@ -1,0 +1,162 @@
+#+title: Atbash Cipher
+
+* Debugging
+I thought I was being pretty clever with this:
+
+#+begin_src emacs-lisp
+  (defun encode (plaintext)
+    "Encode PLAINTEXT to atbash-cipher encoding."
+    (let* ((alphabet (number-sequence ?a ?z))
+           (atbash-alist (cons
+                          ;; use atbash-alist to kill spaces
+                          (cons (string-to-char " ") (string-to-char ""))
+                          (seq-mapn #'(lambda (k v) (cons k v))
+                                    alphabet (reverse alphabet)))))
+      ;; replace key with value
+      (mapconcat #'(lambda (c) (string (or (alist-get c atbash-alist) c)))
+                (downcase plaintext)
+                "")))
+#+end_src
+
+But...
+
+#+begin_example
+  F.FF.FF.
+
+  F encode-O-M-G
+      (ert-test-failed
+       ((should
+         (equal "lnt"
+                (encode "O M G")))
+        :form
+        (equal "lnt" "l\0n\0t")
+        :value nil :explanation
+        (arrays-of-different-length 3 5 "lnt" "l\0n\0t" first-mismatch-at 1)))
+
+  F encode-all-the-things
+      (ert-test-failed
+       ((should
+         (equal ciphertext
+                (encode plaintext)))
+        :form
+        (equal "gsvjf rxpyi ldmul cqfnk hlevi gsvoz abwlt" "gsv\0jfrxp\0yildm\0ulc\0qfnkh\0levi\0gsv\0ozab\0wlt.")
+        :value nil :explanation
+        (arrays-of-different-length 41 44 "gsvjf rxpyi ldmul cqfnk hlevi gsvoz abwlt" "gsv\0jfrxp\0yildm\0ulc\0qfnkh\0levi\0gsv\0ozab\0wlt." first-mismatch-at 3)))
+
+  F encode-long-word
+      (ert-test-failed
+       ((should
+         (equal "nrmwy oldrm tob"
+                (encode "mindblowingly")))
+        :form
+        (equal "nrmwy oldrm tob" "nrmwyoldrmtob")
+        :value nil :explanation
+        (arrays-of-different-length 15 13 "nrmwy oldrm tob" "nrmwyoldrmtob" first-mismatch-at 5)))
+
+  F encode-numbers
+      (ert-test-failed
+       ((should
+         (equal "gvhgr mt123 gvhgr mt"
+                (encode "Testing, 1 2 3, testing.")))
+        :form
+        (equal "gvhgr mt123 gvhgr mt" "gvhgrmt,\0001\0002\0003,\0gvhgrmt.")
+        :value nil :explanation
+        (arrays-of-different-length 20 24 "gvhgr mt123 gvhgr mt" "gvhgrmt,\0001\0002\0003,\0gvhgrmt." first-mismatch-at 5)))
+
+  F encode-sentence
+      (ert-test-failed
+       ((should
+         (equal "gifgs rhurx grlm"
+                (encode "Truth is fiction.")))
+        :form
+        (equal "gifgs rhurx grlm" "gifgs\0rh\0urxgrlm.")
+        :value nil :explanation
+        (arrays-of-different-length 16 17 "gifgs rhurx grlm" "gifgs\0rh\0urxgrlm." first-mismatch-at 5)))
+#+end_example
+
+the space substition was bad news.
+
+* Everything but the 5 character chunks
+
+#+begin_src emacs-lisp
+  (defun encode (plaintext)
+    "Encode PLAINTEXT to atbash-cipher encoding."
+    (let* ((alphabet (number-sequence ?a ?z))
+           (atbash-alist (seq-mapn #'(lambda (k v) (cons k v))
+                                   alphabet (reverse alphabet))))
+      (mapconcat #'string
+                 (seq-filter #'(lambda (c) (seq-some
+                                            #'(lambda (alpha) (eq c alpha))
+                                            (append (number-sequence ?0 ?9)
+                                                    alphabet)))
+                             ;; replace key with value
+                             (seq-mapn
+                              #'(lambda (c) (or (alist-get c atbash-alist) c))
+                              (downcase plaintext)))
+                 "")))
+#+end_src
+
+Cleaned that up to use regexp instead:
+
+#+begin_src emacs-lisp
+  (defun encode (plaintext)
+    "Encode PLAINTEXT to atbash-cipher encoding."
+    (let* ((alphabet (number-sequence ?a ?z))
+           (atbash-alist (seq-mapn #'(lambda (k v) (cons k v))
+                                   alphabet (reverse alphabet)))
+           (atbash-valid-char-regexp "[[:alnum:]]"))
+      (mapconcat #'string
+                 (seq-filter
+                  #'(lambda (c) (string-match-p atbash-valid-char-regexp
+                                                (string c)))
+                             ;; replace key with value
+                             (seq-mapn
+                              #'(lambda (c) (or (alist-get c atbash-alist) c))
+                              (downcase plaintext)))
+                 "")))
+#+end_src
+
+* "Chunking" text into groups of 5 chars
+
+#+begin_src emacs-lisp
+  (defun chunk-text (chunk-size text &optional chunk-char)
+    (let ((chunk-char (or chunk-char " ")))
+      (defun chunk-helper (size lst count acc)
+        (cond ((and lst (= chunk-size count))
+               (chunk-helper size (cdr lst) 0 (cons chunk-char acc)))
+              (lst (chunk-helper size (cdr lst) (1+ count) (cons (car lst) acc)))
+              (t (reverse acc)))))
+    (mapconcat
+     #'string (chunk-helper chunk-size (mapcar #'string text) 0 '())
+     ""))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (chunk-text 5 "foo")
+  ,*** Eval error ***  Wrong type argument: characterp, "f"
+#+end_src
+
+Fixed it (and fixed a bug):
+
+#+begin_src emacs-lisp
+  (defun chunk-text (chunk-size text &optional chunk-sep)
+    (let ((chunk-sep (or chunk-sep (string-to-char " ")))
+          (text-list (mapcar #'identity text)))
+      (defun chunk-helper (size lst count acc)
+        (cond ((and lst (= chunk-size count))
+               (chunk-helper size lst 0 (cons chunk-sep acc)))
+              (lst (chunk-helper size (cdr lst) (1+ count) (cons (car lst) acc)))
+              (t (reverse acc))))
+      (mapconcat #'string (chunk-helper chunk-size text-list 0 '()) "")))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (chunk-text 5 "foo")
+  "foo"
+  ELISP> (chunk-text 5 "foobar")
+  "fooba " ;; bug
+  ELISP> (chunk-text 5 "foobar")
+  "fooba r" ;; fixed
+  ELISP> (chunk-text 5 "foobarbazqux")
+  "fooba rbazq ux"
+#+end_src
