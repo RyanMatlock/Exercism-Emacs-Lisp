@@ -1,0 +1,877 @@
+#+title: Gigasecond
+
+* First attempt
+
+#+begin_src emacs-lisp
+  (defun from (second minute hour day month year)
+    "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
+  MONTH, and YEAR."
+    (let* ((t-init (make-decoded-time
+                    :second second
+                    :minute minute
+                    :hour hour
+                    :day day
+                    :month month
+                    :year year))
+           (giga (expt 10 9))
+           (gigasecond (make-decoded-time :second giga)))
+      ;; this doesn't do anything helpful
+      ;; (print (format (concat "t-init: %s\n"
+      ;;                        "gigasecond: %s")
+      ;;                t-init
+      ;;                gigasecond))
+      (decoded-time-add t-init gigasecond)))
+#+end_src
+
+#+begin_example
+  FFFFF
+
+  F from-19590719T123030Z
+      (ert-test-failed
+       ((should
+         (equal
+          '(10 17 14 27 3 1991)
+          (from 30 30 12 19 7 1959)))
+        :form
+        (equal
+         (10 17 14 27 3 1991)
+         (10 17 14 27 3 1991 nil nil nil))
+        :value nil :explanation
+        (proper-lists-of-different-length 6 9
+                                          (10 17 14 27 3 1991)
+                                          (10 17 14 27 3 1991 nil nil nil)
+                                          first-mismatch-at 6)))
+
+  F from-19770613T235959Z
+      (ert-test-failed
+       ((should
+         (equal
+          '(39 46 1 20 2 2009)
+          (from 59 59 23 13 6 1977)))
+        :form
+        (equal
+         (39 46 1 20 2 2009)
+         (39 46 1 20 2 2009 nil nil nil))
+        :value nil :explanation
+        (proper-lists-of-different-length 6 9
+                                          (39 46 1 20 2 2009)
+                                          (39 46 1 20 2 2009 nil nil nil)
+                                          first-mismatch-at 6)))
+
+  F from-20110425T120000Z
+      (ert-test-failed
+       ((should
+         (equal
+          '(40 46 13 1 1 2043)
+          (from 0 0 12 25 4 2011)))
+        :form
+        (equal
+         (40 46 13 1 1 2043)
+         (40 46 13 1 1 2043 nil nil nil))
+        :value nil :explanation
+        (proper-lists-of-different-length 6 9
+                                          (40 46 13 1 1 2043)
+                                          (40 46 13 1 1 2043 nil nil nil)
+                                          first-mismatch-at 6)))
+
+  F from-lisp-epoch
+      (ert-test-failed
+       ((should
+         (equal
+          '(40 46 1 10 9 1931)
+          (from 0 0 0 1 1 1900)))
+        :form
+        (equal
+         (40 46 1 10 9 1931)
+         (40 46 1 10 9 1931 nil nil nil))
+        :value nil :explanation
+        (proper-lists-of-different-length 6 9
+                                          (40 46 1 10 9 1931)
+                                          (40 46 1 10 9 1931 nil nil nil)
+                                          first-mismatch-at 6)))
+
+  F from-unix-epoch
+      (ert-test-failed
+       ((should
+         (equal
+          '(40 46 1 9 9 2001)
+          (from 0 0 0 1 1 1970)))
+        :form
+        (equal
+         (40 46 1 9 9 2001)
+         (40 46 1 9 9 2001 nil nil nil))
+        :value nil :explanation
+        (proper-lists-of-different-length 6 9
+                                          (40 46 1 9 9 2001)
+                                          (40 46 1 9 9 2001 nil nil nil)
+                                          first-mismatch-at 6)))
+#+end_example
+
+This is probably not the *right* way to do it, but it passes all the tests:
+
+#+begin_src emacs-lisp
+  (defun from (second minute hour day month year)
+    "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
+  MONTH, and YEAR."
+    (let* ((t-init (make-decoded-time
+                    :second second
+                    :minute minute
+                    :hour hour
+                    :day day
+                    :month month
+                    :year year))
+           (giga (expt 10 9))
+           (gigasecond (make-decoded-time :second giga)))
+      (take 6 (decoded-time-add t-init gigasecond))))
+#+end_src
+
+Slightly less magic number-y:
+
+#+begin_src emacs-lisp
+  (defun from (second minute hour day month year)
+    "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
+  MONTH, and YEAR."
+    (let* ((args (list second minute hour day month year))
+           (t-init (make-decoded-time
+                    :second second
+                    :minute minute
+                    :hour hour
+                    :day day
+                    :month month
+                    :year year))
+           (giga (expt 10 9))
+           (gigasecond (make-decoded-time :second giga)))
+      (take (length args) (decoded-time-add t-init gigasecond))))
+#+end_src
+
+Weird, that failed the Exercism tests:
+
+#+begin_example
+  We received the following error when we ran your code:
+  Loading /mnt/exercism-iteration/gigasecond.el (source)...
+  Running 5 tests (2023-04-10 08:28:53+0000, selector `t')
+  Test from-19590719T123030Z backtrace:
+    signal(void-function (make-decoded-time))
+    apply(signal (void-function (make-decoded-time)))
+    (setq value-22 (apply fn-20 args-21))
+    (unwind-protect (setq value-22 (apply fn-20 args-21)) (setq form-des
+    (if (unwind-protect (setq value-22 (apply fn-20 args-21)) (setq form
+    (let (form-description-24) (if (unwind-protect (setq value-22 (apply
+    (let ((value-22 'ert-form-evaluation-aborted-23)) (let (form-descrip
+    (let* ((fn-20 #'equal) (args-21 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-20 #'equal) (args-21 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-20 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-19590719T123030Z :documentation 
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests [#s(ert-test 
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-19590719T123030Z condition:
+      (void-function make-decoded-time)
+     FAILED  1/5  from-19590719T123030Z (0.000171 sec)
+
+  Test from-19770613T235959Z backtrace:
+    signal(void-function (make-decoded-time))
+    apply(signal (void-function (make-decoded-time)))
+    (setq value-17 (apply fn-15 args-16))
+    (unwind-protect (setq value-17 (apply fn-15 args-16)) (setq form-des
+    (if (unwind-protect (setq value-17 (apply fn-15 args-16)) (setq form
+    (let (form-description-19) (if (unwind-protect (setq value-17 (apply
+    (let ((value-17 'ert-form-evaluation-aborted-18)) (let (form-descrip
+    (let* ((fn-15 #'equal) (args-16 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-15 #'equal) (args-16 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-15 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-19770613T235959Z :documentation 
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests [#s(ert-test 
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-19770613T235959Z condition:
+      (void-function make-decoded-time)
+     FAILED  2/5  from-19770613T235959Z (0.000123 sec)
+
+  Test from-20110425T120000Z backtrace:
+    signal(void-function (make-decoded-time))
+    apply(signal (void-function (make-decoded-time)))
+    (setq value-12 (apply fn-10 args-11))
+    (unwind-protect (setq value-12 (apply fn-10 args-11)) (setq form-des
+    (if (unwind-protect (setq value-12 (apply fn-10 args-11)) (setq form
+    (let (form-description-14) (if (unwind-protect (setq value-12 (apply
+    (let ((value-12 'ert-form-evaluation-aborted-13)) (let (form-descrip
+    (let* ((fn-10 #'equal) (args-11 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-10 #'equal) (args-11 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-10 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-20110425T120000Z :documentation 
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests [... ... ... 
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-20110425T120000Z condition:
+      (void-function make-decoded-time)
+     FAILED  3/5  from-20110425T120000Z (0.000119 sec)
+
+  Test from-lisp-epoch backtrace:
+    signal(void-function (make-decoded-time))
+    apply(signal (void-function (make-decoded-time)))
+    (setq value-2 (apply fn-0 args-1))
+    (unwind-protect (setq value-2 (apply fn-0 args-1)) (setq form-descri
+    (if (unwind-protect (setq value-2 (apply fn-0 args-1)) (setq form-de
+    (let (form-description-4) (if (unwind-protect (setq value-2 (apply f
+    (let ((value-2 'ert-form-evaluation-aborted-3)) (let (form-descripti
+    (let* ((fn-0 #'equal) (args-1 (condition-case err (let ((signal-hook
+    (let ((lexical-binding t)) (let* ((fn-0 #'equal) (args-1 (condition-
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-0 #'equal) (a
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-lisp-epoch :documentation nil :b
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests ... :test-map
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-lisp-epoch condition:
+      (void-function make-decoded-time)
+     FAILED  4/5  from-lisp-epoch (0.000118 sec)
+
+  Test from-unix-epoch backtrace:
+    signal(void-function (make-decoded-time))
+    apply(signal (void-function (make-decoded-time)))
+    (setq value-7 (apply fn-5 args-6))
+    (unwind-protect (setq value-7 (apply fn-5 args-6)) (setq form-descri
+    (if (unwind-protect (setq value-7 (apply fn-5 args-6)) (setq form-de
+    (let (form-description-9) (if (unwind-protect (setq value-7 (apply f
+    (let ((value-7 'ert-form-evaluation-aborted-8)) (let (form-descripti
+    (let* ((fn-5 #'equal) (args-6 (condition-case err (let ((signal-hook
+    (let ((lexical-binding t)) (let* ((fn-5 #'equal) (args-6 (condition-
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-5 #'equal) (a
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-unix-epoch :documentation nil :b
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests ... :test-map
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-unix-epoch condition:
+      (void-function make-decoded-time)
+     FAILED  5/5  from-unix-epoch (0.000120 sec)
+
+
+  Ran 5 tests, 0 results as expected, 5 unexpected (2023-04-10 08:28:53+0000, 0.650245 sec)
+
+  5 unexpected results:
+     FAILED  from-19590719T123030Z
+
+     FAILED  from-19770613T235959Z
+
+     FAILED  from-20110425T120000Z
+
+     FAILED  from-lisp-epoch
+
+     FAILED  from-unix-epoch
+#+end_example
+
+It seems to dislike my use of =make-decoded-time=.
+
+#+begin_src emacs-lisp
+  ELISP> (make-decoded-time :second (expt 10 9))
+  (1000000000 nil nil nil nil nil nil nil nil)
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (let ((giga (expt 10 9)))
+           (equal (make-decoded-time :second giga)
+                  (cons giga (make-list 8 nil))))
+  t
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun from (second minute hour day month year)
+    "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
+  MONTH, and YEAR."
+    (let* ((args (list second minute hour day month year))
+           (t-init (make-decoded-time
+                    :second second
+                    :minute minute
+                    :hour hour
+                    :day day
+                    :month month
+                    :year year))
+           (giga (expt 10 9))
+           ;; (gigasecond (make-decoded-time :second giga))
+           (pseudo-make-decoded-time-sans-seconds (make-list 8 nil))
+           (gigasecond (cons giga pseudo-make-decoded-time-sans-seconds)))
+      (take (length args) (decoded-time-add t-init gigasecond))))
+#+end_src
+
+:facepalm: Didn't notice =t-init= was also created with =make-decoded-time=,
+so I failed again.
+
+#+begin_src emacs-lisp
+  (defun from (second minute hour day month year)
+    "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
+  MONTH, and YEAR."
+    (let* ((args (list second minute hour day month year))
+           ;; (t-init (make-decoded-time
+           ;;          :second second
+           ;;          :minute minute
+           ;;          :hour hour
+           ;;          :day day
+           ;;          :month month
+           ;;          :year year))
+           (t-init (list second
+                         minute
+                         hour
+                         day
+                         month
+                         year
+                         ;; nil
+                         ;; nil
+                         ;; nil
+                         ))
+           (giga (expt 10 9))
+           ;; (gigasecond (make-decoded-time :second giga))
+           (pseudo-make-decoded-time-sans-seconds (make-list 8 nil))
+           (gigasecond (cons giga pseudo-make-decoded-time-sans-seconds)))
+      (take (length args) (decoded-time-add t-init (list giga)))))
+#+end_src
+
+This passes locally even though it's gross.
+
+#+begin_src emacs-lisp
+  (defun from (second minute hour day month year)
+    "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
+  MONTH, and YEAR."
+    (let* ((args (list second minute hour day month year))
+           (t-init (list second minute hour day month year))
+           (giga (expt 10 9)))
+      (take (length args) (decoded-time-add t-init (list giga)))))
+#+end_src
+
+Still gross even when cleaned up---but it passes (locally).
+
+#+begin_example
+  We received the following error when we ran your code:
+  Loading /mnt/exercism-iteration/gigasecond.el (source)...
+  Running 5 tests (2023-04-10 09:01:01+0000, selector `t')
+  Test from-19590719T123030Z backtrace:
+    signal(void-function (take))
+    apply(signal (void-function (take)))
+    (setq value-22 (apply fn-20 args-21))
+    (unwind-protect (setq value-22 (apply fn-20 args-21)) (setq form-des
+    (if (unwind-protect (setq value-22 (apply fn-20 args-21)) (setq form
+    (let (form-description-24) (if (unwind-protect (setq value-22 (apply
+    (let ((value-22 'ert-form-evaluation-aborted-23)) (let (form-descrip
+    (let* ((fn-20 #'equal) (args-21 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-20 #'equal) (args-21 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-20 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-19590719T123030Z :documentation 
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests [#s(ert-test 
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-19590719T123030Z condition:
+      (void-function take)
+     FAILED  1/5  from-19590719T123030Z (0.000268 sec)
+
+  Test from-19770613T235959Z backtrace:
+    signal(void-function (take))
+    apply(signal (void-function (take)))
+    (setq value-17 (apply fn-15 args-16))
+    (unwind-protect (setq value-17 (apply fn-15 args-16)) (setq form-des
+    (if (unwind-protect (setq value-17 (apply fn-15 args-16)) (setq form
+    (let (form-description-19) (if (unwind-protect (setq value-17 (apply
+    (let ((value-17 'ert-form-evaluation-aborted-18)) (let (form-descrip
+    (let* ((fn-15 #'equal) (args-16 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-15 #'equal) (args-16 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-15 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-19770613T235959Z :documentation 
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests [#s(ert-test 
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-19770613T235959Z condition:
+      (void-function take)
+     FAILED  2/5  from-19770613T235959Z (0.000131 sec)
+
+  Test from-20110425T120000Z backtrace:
+    signal(void-function (take))
+    apply(signal (void-function (take)))
+    (setq value-12 (apply fn-10 args-11))
+    (unwind-protect (setq value-12 (apply fn-10 args-11)) (setq form-des
+    (if (unwind-protect (setq value-12 (apply fn-10 args-11)) (setq form
+    (let (form-description-14) (if (unwind-protect (setq value-12 (apply
+    (let ((value-12 'ert-form-evaluation-aborted-13)) (let (form-descrip
+    (let* ((fn-10 #'equal) (args-11 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-10 #'equal) (args-11 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-10 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-20110425T120000Z :documentation 
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests [... ... ... 
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-20110425T120000Z condition:
+      (void-function take)
+     FAILED  3/5  from-20110425T120000Z (0.000129 sec)
+
+  Test from-lisp-epoch backtrace:
+    signal(void-function (take))
+    apply(signal (void-function (take)))
+    (setq value-2 (apply fn-0 args-1))
+    (unwind-protect (setq value-2 (apply fn-0 args-1)) (setq form-descri
+    (if (unwind-protect (setq value-2 (apply fn-0 args-1)) (setq form-de
+    (let (form-description-4) (if (unwind-protect (setq value-2 (apply f
+    (let ((value-2 'ert-form-evaluation-aborted-3)) (let (form-descripti
+    (let* ((fn-0 #'equal) (args-1 (condition-case err (let ((signal-hook
+    (let ((lexical-binding t)) (let* ((fn-0 #'equal) (args-1 (condition-
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-0 #'equal) (a
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-lisp-epoch :documentation nil :b
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests ... :test-map
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-lisp-epoch condition:
+      (void-function take)
+     FAILED  4/5  from-lisp-epoch (0.000136 sec)
+
+  Test from-unix-epoch backtrace:
+    signal(void-function (take))
+    apply(signal (void-function (take)))
+    (setq value-7 (apply fn-5 args-6))
+    (unwind-protect (setq value-7 (apply fn-5 args-6)) (setq form-descri
+    (if (unwind-protect (setq value-7 (apply fn-5 args-6)) (setq form-de
+    (let (form-description-9) (if (unwind-protect (setq value-7 (apply f
+    (let ((value-7 'ert-form-evaluation-aborted-8)) (let (form-descripti
+    (let* ((fn-5 #'equal) (args-6 (condition-case err (let ((signal-hook
+    (let ((lexical-binding t)) (let* ((fn-5 #'equal) (args-6 (condition-
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-5 #'equal) (a
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-unix-epoch :documentation nil :b
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests ... :test-map
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-unix-epoch condition:
+      (void-function take)
+     FAILED  5/5  from-unix-epoch (0.000130 sec)
+
+
+  Ran 5 tests, 0 results as expected, 5 unexpected (2023-04-10 09:01:02+0000, 0.695748 sec)
+
+  5 unexpected results:
+     FAILED  from-19590719T123030Z
+
+     FAILED  from-19770613T235959Z
+
+     FAILED  from-20110425T120000Z
+
+     FAILED  from-lisp-epoch
+
+     FAILED  from-unix-epoch
+#+end_example
+
+Apparently =take= isn't a function I can use for some reason.
+
+#+begin_src emacs-lisp
+  (defun from (second minute hour day month year)
+    "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
+  MONTH, and YEAR."
+    (defun --take (n seq)
+      "Exercism says take is a void function for some reason"
+      (let* ((ts (make-list n t))
+             (nils (make-list (- (length seq) n) nil))
+             (ts-nils (append ts nils))
+             (seq-alist (seq-mapn #'(lambda (x bool) (cons x bool))
+                                  seq
+                                  ts-nils)))
+        (mapcar #'car (seq-filter
+                       #'(lambda (alist-elem) (cdr alist-elem)) seq-alist))))
+    (let* ((args (list second minute hour day month year))
+           (t-init (list second minute hour day month year))
+           (giga (expt 10 9)))
+      (--take (length args) (decoded-time-add t-init (list giga)))))
+#+end_src
+
+Ridiculous (but it passes locally).
+
+#+begin_example
+  We received the following error when we ran your code:
+  Loading /mnt/exercism-iteration/gigasecond.el (source)...
+  Running 5 tests (2023-04-10 09:10:09+0000, selector `t')
+  Test from-19590719T123030Z backtrace:
+    signal(void-function (decoded-time-add))
+    apply(signal (void-function (decoded-time-add)))
+    (setq value-22 (apply fn-20 args-21))
+    (unwind-protect (setq value-22 (apply fn-20 args-21)) (setq form-des
+    (if (unwind-protect (setq value-22 (apply fn-20 args-21)) (setq form
+    (let (form-description-24) (if (unwind-protect (setq value-22 (apply
+    (let ((value-22 'ert-form-evaluation-aborted-23)) (let (form-descrip
+    (let* ((fn-20 #'equal) (args-21 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-20 #'equal) (args-21 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-20 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-19590719T123030Z :documentation 
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests [#s(ert-test 
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-19590719T123030Z condition:
+      (void-function decoded-time-add)
+     FAILED  1/5  from-19590719T123030Z (0.000158 sec)
+
+  Test from-19770613T235959Z backtrace:
+    signal(void-function (decoded-time-add))
+    apply(signal (void-function (decoded-time-add)))
+    (setq value-17 (apply fn-15 args-16))
+    (unwind-protect (setq value-17 (apply fn-15 args-16)) (setq form-des
+    (if (unwind-protect (setq value-17 (apply fn-15 args-16)) (setq form
+    (let (form-description-19) (if (unwind-protect (setq value-17 (apply
+    (let ((value-17 'ert-form-evaluation-aborted-18)) (let (form-descrip
+    (let* ((fn-15 #'equal) (args-16 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-15 #'equal) (args-16 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-15 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-19770613T235959Z :documentation 
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests [#s(ert-test 
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-19770613T235959Z condition:
+      (void-function decoded-time-add)
+     FAILED  2/5  from-19770613T235959Z (0.000140 sec)
+
+  Test from-20110425T120000Z backtrace:
+    signal(void-function (decoded-time-add))
+    apply(signal (void-function (decoded-time-add)))
+    (setq value-12 (apply fn-10 args-11))
+    (unwind-protect (setq value-12 (apply fn-10 args-11)) (setq form-des
+    (if (unwind-protect (setq value-12 (apply fn-10 args-11)) (setq form
+    (let (form-description-14) (if (unwind-protect (setq value-12 (apply
+    (let ((value-12 'ert-form-evaluation-aborted-13)) (let (form-descrip
+    (let* ((fn-10 #'equal) (args-11 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-10 #'equal) (args-11 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-10 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-20110425T120000Z :documentation 
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests [... ... ... 
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-20110425T120000Z condition:
+      (void-function decoded-time-add)
+     FAILED  3/5  from-20110425T120000Z (0.000133 sec)
+
+  Test from-lisp-epoch backtrace:
+    signal(void-function (decoded-time-add))
+    apply(signal (void-function (decoded-time-add)))
+    (setq value-2 (apply fn-0 args-1))
+    (unwind-protect (setq value-2 (apply fn-0 args-1)) (setq form-descri
+    (if (unwind-protect (setq value-2 (apply fn-0 args-1)) (setq form-de
+    (let (form-description-4) (if (unwind-protect (setq value-2 (apply f
+    (let ((value-2 'ert-form-evaluation-aborted-3)) (let (form-descripti
+    (let* ((fn-0 #'equal) (args-1 (condition-case err (let ((signal-hook
+    (let ((lexical-binding t)) (let* ((fn-0 #'equal) (args-1 (condition-
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-0 #'equal) (a
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-lisp-epoch :documentation nil :b
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests ... :test-map
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-lisp-epoch condition:
+      (void-function decoded-time-add)
+     FAILED  4/5  from-lisp-epoch (0.000123 sec)
+
+  Test from-unix-epoch backtrace:
+    signal(void-function (decoded-time-add))
+    apply(signal (void-function (decoded-time-add)))
+    (setq value-7 (apply fn-5 args-6))
+    (unwind-protect (setq value-7 (apply fn-5 args-6)) (setq form-descri
+    (if (unwind-protect (setq value-7 (apply fn-5 args-6)) (setq form-de
+    (let (form-description-9) (if (unwind-protect (setq value-7 (apply f
+    (let ((value-7 'ert-form-evaluation-aborted-8)) (let (form-descripti
+    (let* ((fn-5 #'equal) (args-6 (condition-case err (let ((signal-hook
+    (let ((lexical-binding t)) (let* ((fn-5 #'equal) (args-6 (condition-
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-5 #'equal) (a
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name from-unix-epoch :documentation nil :b
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests ... :test-map
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/gigasecond-
+    command-line()
+    normal-top-level()
+  Test from-unix-epoch condition:
+      (void-function decoded-time-add)
+     FAILED  5/5  from-unix-epoch (0.000148 sec)
+
+
+  Ran 5 tests, 0 results as expected, 5 unexpected (2023-04-10 09:10:09+0000, 0.505531 sec)
+
+  5 unexpected results:
+     FAILED  from-19590719T123030Z
+
+     FAILED  from-19770613T235959Z
+
+     FAILED  from-20110425T120000Z
+
+     FAILED  from-lisp-epoch
+
+     FAILED  from-unix-epoch
+#+end_example
+
+Even more ridiculous: I can't use =decoded-time-add=.
+
+It looks like I'm going to have to do this manually with modular arithmetic,
+which is really annoying. Actually, you don't want to do that because of leap
+years. Maybe it's time to cheat again and look at the community solutions? Or
+play around in IELM a little with =decode-time= and =encode-time= a little
+first?
+
+#+begin_src emacs-lisp
+  ELISP> (encode-time 0 0 0 1 1 1900)
+  (-33707 61952)
+
+  ELISP> (encode-time (expt 10 9))
+  ,*** Eval error ***  Wrong type argument: consp, 1000000000
+  ELISP> (decode-time (expt 10 9) t 'integer)
+  (40 46 1 9 9 2001 0 nil 0)
+
+  ELISP> (time-convert  (decode-time (expt 10 9) t 'integer) 'integer)
+  2621486 (#o12000056, #x28002e)
+  ELISP> (time-convert (encode-time 0 0 0 1 1 1900) 'integer)
+  -2208960000 (#o-20352407000, #x-83aa0e00)
+  ELISP> (let* ((form 'integer)
+                (gigasecond
+                 (time-convert
+                  (decode-time (expt 10 9) t form) form))
+                (t-init
+                 (time-convert (encode-time 0 0 0 1 1 1900) form)))
+           (decode-time (+ gigasecond t-init) t form))
+  (26 11 16 31 1 1900 3 nil 0)
+
+  ELISP> (let* ((form 'integer)
+                (gigasecond
+                 (cons (expt 10 9) (make-list 8 nil)))
+                (t-init
+                 (time-convert (encode-time 0 0 0 1 1 1900) form)))
+           (decode-time (decoded-time-add gigasecond t-init) t form))
+  ,*** Eval error ***  Wrong type argument: listp, -2208960000
+  ELISP> (let* ((form 'integer)
+                (gigasecond
+                 (encode-time (cons (expt 10 9) (make-list 8 nil))))
+                (t-init
+                 (time-convert (encode-time 0 0 0 1 1 1900) form)))
+           (decode-time (decoded-time-add gigasecond t-init) t form))
+  ,*** Eval error ***  Wrong type argument: fixnump, nil
+  ELISP> (let* ((form 'integer)
+                (gigasecond
+                 (encode-time (cons (expt 10 9) (make-list 5 0))))
+                (t-init
+                 (time-convert (encode-time 0 0 0 1 1 1900) form)))
+           (decode-time (decoded-time-add gigasecond t-init) t form))
+  ,*** Eval error ***  Wrong type argument: consp, nil
+  ELISP> (let* ((form 'integer)
+                (gigasecond
+                 (time-convert
+                  (encode-time (cons (expt 10 9) (make-list 5 0))) form))
+                (t-init
+                 (time-convert (encode-time 0 0 0 1 1 1900) form)))
+           (decode-time (decoded-time-add gigasecond t-init) t form))
+  ,*** Eval error ***  Wrong type argument: consp, nil
+  ELISP> (let* ((form 'integer)
+                (gigasecond
+                 (time-convert
+                  (encode-time (list (expt 10 9) 0 0 0 0 0)) form))
+                (t-init
+                 (time-convert (encode-time 0 0 0 1 1 1900) form)))
+           (decode-time (decoded-time-add gigasecond t-init) t form))
+  ,*** Eval error ***  Wrong type argument: consp, nil
+#+end_src
+
+[[https://casouri.github.io/emacs-manuals/24.3/elisp/Time-Conversion.html][Emacs Manual 24.3 -- Time Conversion]] maybe this will tell me what to do so I
+don't use functions that are too new.
+
+#+begin_src emacs-lisp
+  ELISP> (encode-time 0 0 0 1 1 1900)
+  (-33707 61952)
+
+  ELISP> (seconds-to-time (expt 10 9))
+  (15258 51712 0 0)
+
+  ELISP> (let ((jan-1-1900 (encode-time 0 0 0 1 1 1900))
+               (gigasecond (seconds-to-time (expt 10 9))))
+           (decoded-time-add jan-1-1900 gigasecond))
+  ,*** Eval error ***  Month nil is invalid
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (let ((jan-1-1900 (decode-time (encode-time 0 0 0 1 1 1900)))
+               (gigasecond (decode-time (seconds-to-time (expt 10 9)))))
+           (decoded-time-add jan-1-1900 gigasecond))
+  (40 46 11 9 10 3901 1 nil -28800)
+
+  ELISP> (let* ((form 'integer)
+                (jan-1-1900 (decode-time (encode-time 0 0 0 1 1 1900) t form))
+                (gigasecond (decode-time (seconds-to-time (expt 10 9)) t form)))
+           (decoded-time-add jan-1-1900 gigasecond))
+  (40 46 9 10 10 3901 1 nil 0)
+
+  ELISP> (let* ((form 'integer)
+                (jan-1-1900
+                 (decode-time (encode-time 0 0 0 1 1 1900) nil form))
+                (gigasecond
+                 (decode-time (seconds-to-time (expt 10 9)) nil form)))
+           (decode-time
+            (encode-time (decoded-time-add jan-1-1900 gigasecond))
+            t form))
+  (40 46 19 9 10 3901 3 nil 0)
+#+end_src
+
+It looks like I'm close because
+
+#+begin_src emacs-lisp
+  (ert-deftest from-lisp-epoch ()
+    (should
+     (equal '(40 46 1 10 9 1931) (from 0 0 0 1 1 1900))))
+#+end_src
+
+But maybe those matching numbers are a coincidence. Yeah, I think they might
+be because the order is wrong anyway.
+
+I'm going to take a look at the community solutions because I'm not
+understanding this problem (at least in such a way that passes Exercism's
+tests---I had some solutions that passed locally).
+
+[[https://exercism.org/tracks/emacs-lisp/exercises/gigasecond/solutions/mdong][mdong's solution]] (from 6 years ago):
+
+#+begin_src emacs-lisp
+  (defun from (s m h D M Y)
+    (butlast
+     (decode-time
+      (encode-time
+       (+ (expt 10 9) s) m h D M Y "UTC")
+      "UTC")
+     3))
+#+end_src
+
+Let's see if that passes locally. Yeah, that works. Here's how I would
+implement it:
+
+#+begin_src emacs-lisp
+  (defun from (second minute hour day month year)
+    "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
+  MONTH, and YEAR."
+    (let ((giga (expt 10 9))
+          (tz "UTC"))
+      (butlast (decode-time (encode-time (+ giga second)
+                                         minute
+                                         hour
+                                         day
+                                         month
+                                         year
+                                         tz)
+                            tz)
+               3)))
+#+end_src
+
+This is even more me-ish because it gets rid of the magic number, 3, in the
+second argument of =butlast=:
+
+#+begin_src emacs-lisp
+  (defun from (second minute hour day month year)
+    "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
+  MONTH, and YEAR."
+    (let* ((giga (expt 10 9))
+           (tz "UTC")
+           (num-significant-args
+            (length (list second minute hour day month year)))
+           (t-result (decode-time (encode-time (+ giga second)
+                                               minute
+                                               hour
+                                               day
+                                               month
+                                               year
+                                               tz)
+                                  tz)))
+      (butlast t-result (- (length t-result) num-significant-args))))
+#+end_src
+
+[[https://exercism.org/tracks/emacs-lisp/exercises/gigasecond/solutions/ayrat555][ayrat555's solution]] is also pretty nice:
+
+#+begin_src emacs-lisp
+  (defun from(seconds minutes hours day month year)
+    "Calculates the moment when someone has lived for 10^9 seconds."
+    (let* ((encoded-time (encode-time seconds minutes hours day month year "UTC"))
+           (time-plus-gigasecond (time-add encoded-time 1000000000))
+           (decoded-time (decode-time time-plus-gigasecond "UTC")))
+      (butlast decoded-time 3)))
+#+end_src
+
+I think I prefer the use of =time-add=, so I'll see if I can get that to work
+locally. Yep, it also passes.
+
+#+begin_src emacs-lisp
+  (defun from(second minute hour day month year)
+    "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
+  MONTH, and YEAR."
+    (let* ((tz "UTC")
+           (num-significant-values
+            (length (list second minute hour day month year)))
+           (init-time (encode-time second minute hour day month year tz))
+           (giga (expt 10 9))
+           (new-time (time-add init-time giga))
+           (new-decoded-time (decode-time new-time tz))
+           (num-values-to-skip (- (length new-decoded-time)
+                                  num-significant-values)))
+      (butlast new-decoded-time num-values-to-skip)))
+#+end_src
+
+More verbose, but I think it's also a little clearer because it doesn't contain
+magic numbers.
