@@ -7,25 +7,20 @@
 ;; NB: Pay attention to  Emacs' handling of time zones and dst
 ;; in the encode-time and decode-time functions.
 
-(defun from (second minute hour day month year)
+;; aryat555's solution (lightly edited):
+(defun from(second minute hour day month year)
   "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
 MONTH, and YEAR."
-  ;; (defun --take (n seq)
-  ;;   "Exercism says take is a void function for some reason"
-  ;;   (let* ((ts (make-list n t))
-  ;;          (nils (make-list (- (length seq) n) nil))
-  ;;          (ts-nils (append ts nils))
-  ;;          (seq-alist (seq-mapn #'(lambda (x bool) (cons x bool))
-  ;;                               seq
-  ;;                               ts-nils)))
-  ;;     (mapcar #'car (seq-filter
-  ;;                    #'(lambda (alist-elem) (cdr alist-elem)) seq-alist))))
-  ;; (let* ((args (list second minute hour day month year))
-  ;;        (t-init (list second minute hour day month year))
-  ;;        (giga (expt 10 9)))
-  ;;   (--take (length args) (decoded-time-add t-init (list giga))))
-  ()
-  )
+  (let* ((tz "UTC")
+         (num-significant-values
+          (length (list second minute hour day month year)))
+         (init-time (encode-time second minute hour day month year tz))
+         (giga (expt 10 9))
+         (new-time (time-add init-time giga))
+         (new-decoded-time (decode-time new-time tz))
+         (num-values-to-skip (- (length new-decoded-time)
+                                num-significant-values)))
+    (butlast new-decoded-time num-values-to-skip)))
 
 (provide 'gigasecond)
 ;;; gigasecond.el ends here
