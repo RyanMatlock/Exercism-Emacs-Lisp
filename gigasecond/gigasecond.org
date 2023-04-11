@@ -784,3 +784,42 @@ It looks like I'm close because
 
 But maybe those matching numbers are a coincidence. Yeah, I think they might
 be because the order is wrong anyway.
+<<<<<<< Updated upstream
+=======
+
+I'm going to take a look at the community solutions because I'm not
+understanding this problem (at least in such a way that passes Exercism's
+tests---I had some solutions that passed locally).
+
+[[https://exercism.org/tracks/emacs-lisp/exercises/gigasecond/solutions/mdong][mdong's solution]] (from 6 years ago):
+
+#+begin_src emacs-lisp
+  (defun from (s m h D M Y)
+    (butlast
+     (decode-time
+      (encode-time
+       (+ (expt 10 9) s) m h D M Y "UTC")
+      "UTC")
+     3))
+#+end_src
+
+Let's see if that passes locally. Yeah, that works. Here's how I would
+implement it:
+
+#+begin_src emacs-lisp
+  (defun from (second minute hour day month year)
+    "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
+  MONTH, and YEAR."
+    (let ((giga (expt 10 9))
+          (tz "UTC"))
+      (butlast (decode-time (encode-time (+ giga second)
+                                         minute
+                                         hour
+                                         day
+                                         month
+                                         year
+                                         tz)
+                            tz)
+               3)))
+#+end_src
+>>>>>>> Stashed changes
