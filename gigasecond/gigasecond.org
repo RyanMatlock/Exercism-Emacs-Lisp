@@ -784,8 +784,6 @@ It looks like I'm close because
 
 But maybe those matching numbers are a coincidence. Yeah, I think they might
 be because the order is wrong anyway.
-<<<<<<< Updated upstream
-=======
 
 I'm going to take a look at the community solutions because I'm not
 understanding this problem (at least in such a way that passes Exercism's
@@ -822,4 +820,58 @@ implement it:
                             tz)
                3)))
 #+end_src
->>>>>>> Stashed changes
+
+This is even more me-ish because it gets rid of the magic number, 3, in the
+second argument of =butlast=:
+
+#+begin_src emacs-lisp
+  (defun from (second minute hour day month year)
+    "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
+  MONTH, and YEAR."
+    (let* ((giga (expt 10 9))
+           (tz "UTC")
+           (num-significant-args
+            (length (list second minute hour day month year)))
+           (t-result (decode-time (encode-time (+ giga second)
+                                               minute
+                                               hour
+                                               day
+                                               month
+                                               year
+                                               tz)
+                                  tz)))
+      (butlast t-result (- (length t-result) num-significant-args))))
+#+end_src
+
+[[https://exercism.org/tracks/emacs-lisp/exercises/gigasecond/solutions/ayrat555][ayrat555's solution]] is also pretty nice:
+
+#+begin_src emacs-lisp
+  (defun from(seconds minutes hours day month year)
+    "Calculates the moment when someone has lived for 10^9 seconds."
+    (let* ((encoded-time (encode-time seconds minutes hours day month year "UTC"))
+           (time-plus-gigasecond (time-add encoded-time 1000000000))
+           (decoded-time (decode-time time-plus-gigasecond "UTC")))
+      (butlast decoded-time 3)))
+#+end_src
+
+I think I prefer the use of =time-add=, so I'll see if I can get that to work
+locally. Yep, it also passes.
+
+#+begin_src emacs-lisp
+  (defun from(second minute hour day month year)
+    "Add 10^9 seconds to the timestamp specified by SECOND, MINUTE, HOUR, DAY,
+  MONTH, and YEAR."
+    (let* ((tz "UTC")
+           (num-significant-values
+            (length (list second minute hour day month year)))
+           (init-time (encode-time second minute hour day month year tz))
+           (giga (expt 10 9))
+           (new-time (time-add init-time giga))
+           (new-decoded-time (decode-time new-time tz))
+           (num-values-to-skip (- (length new-decoded-time)
+                                  num-significant-values)))
+      (butlast new-decoded-time num-values-to-skip)))
+#+end_src
+
+More verbose, but I think it's also a little clearer because it doesn't contain
+magic numbers.
