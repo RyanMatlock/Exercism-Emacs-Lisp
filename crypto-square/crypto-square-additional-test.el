@@ -1,6 +1,8 @@
 (load-file "crypto-square.el")
 (declare-function normalize "crypto-square.el" (text))
 (declare-function rectangle-values "crypto-square.el" (seq))
+(declare-function
+ block-to-ciphertext "crypto-square.el" ((c r block &optional sep)))
 
 (ert-deftest normalize-already-normal ()
   (let ((normal-text "foobarbaz"))
@@ -23,3 +25,13 @@
 
 (ert-deftest rectangle-values-length13-string ()
   (should (equal '(4 . 4) (rectangle-values "foobarbazquxt"))))
+
+(ert-deftest block-to-ciphertext-simple-block ()
+  (should
+   (string= "fbb oaa orz"
+            (block-to-ciphertext 3 3 '("foo" "bar" "baz")))))
+
+(ert-deftest block-to-ciphertext-with-padding ()
+  (should
+   (string= "fazt orq  obu  bax "
+            (block-to-ciphertext 4 4 '("foob" "arba" "zqux" "t    ")))))
