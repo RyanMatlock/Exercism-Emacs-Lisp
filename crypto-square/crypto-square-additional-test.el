@@ -29,9 +29,9 @@
 (ert-deftest block-to-ciphertext-simple-block ()
   (should
    (string= "fbb oaa orz"
-            (block-to-ciphertext 3 3 '("foo" "bar" "baz")))))
+            (block-to-ciphertext 3 '("foo" "bar" "baz")))))
 
 (ert-deftest block-to-ciphertext-with-padding ()
   (should
    (string= "fazt orq  obu  bax "
-            (block-to-ciphertext 4 4 '("foob" "arba" "zqux" "t    ")))))
+            (block-to-ciphertext 4 '("foob" "arba" "zqux" "t    ")))))

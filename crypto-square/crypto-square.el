@@ -28,18 +28,17 @@ Note that C is for columns and R is for rows."
              (cons c c))))
         (t (error "SEQ must be a sequence."))))
 
-(defun block-to-ciphertext (r c block &optional sep)
-  (defun b2ct-helper (r c block index acc)
-    (if (< index r)
+(defun block-to-ciphertext (block-size block &optional sep)
+  (defun b2ct-helper (bs block index acc)
+    (if (< index bs)
         (let ((chunk
                (mapconcat
                 #'string
                 (mapcar #'(lambda (str) (elt str index)) block) "")))
-          ;; (print (format "index: %d\tchunk: %s" index chunk))
-          (b2ct-helper r c block (1+ index) (cons chunk acc)))
+          (b2ct-helper bs block (1+ index) (cons chunk acc)))
       (reverse acc)))
   (let ((sep (or sep " ")))
-    (mapconcat #'identity (b2ct-helper r c block 0 '()) sep)))
+    (mapconcat #'identity (b2ct-helper block-size block 0 '()) sep)))
 
 (defun encipher (plaintext)
 ;;; Code:
