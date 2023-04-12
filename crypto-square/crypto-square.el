@@ -39,7 +39,7 @@ Note that C is for columns and R is for rows."
         (reverse acc)))
     (nt2b-helper text '())))
 
-(defun block-to-ciphertext (block-size block &optional sep)
+(defun block-to-ciphertext (block &optional sep)
   (defun b2ct-helper (bs block index acc)
     (if (< index bs)
         (let ((chunk
@@ -48,7 +48,8 @@ Note that C is for columns and R is for rows."
                 (mapcar #'(lambda (str) (elt str index)) block) "")))
           (b2ct-helper bs block (1+ index) (cons chunk acc)))
       (reverse acc)))
-  (let ((sep (or sep " ")))
+  (let ((block-size (length (car block)))
+        (sep (or sep " ")))
     (mapconcat #'identity (b2ct-helper block-size block 0 '()) sep)))
 
 (defun encipher (plaintext)
@@ -57,7 +58,7 @@ Note that C is for columns and R is for rows."
          (c (car rect-vals))
          (r (cdr rect-vals))
          (padded-text (string-pad text (* r c))))
-    (block-to-ciphertext c (normalized-text-to-block padded-text))))
+    (block-to-ciphertext (normalized-text-to-block padded-text))))
 
 (provide 'crypto-square)
 ;;; crypto-square.el ends here
