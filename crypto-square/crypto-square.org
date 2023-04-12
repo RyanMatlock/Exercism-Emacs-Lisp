@@ -1,0 +1,28 @@
+#+title: Crypto Square
+
+* IELM
+
+#+begin_src emacs-lisp
+  ELISP> (take 4 '(:foo :bar :baz))
+  (:foo :bar :baz)
+#+end_src
+
+[Not sure if I'll actually be able to use =take= given that Exercism complained
+about it in the gigasecond project.]
+
+#+begin_src emacs-lisp
+  ELISP> (let ((lst (list :foo :bar :baz :qux))
+               (r 3)
+               (acc '()))
+           (dotimes (- r)
+             (cons (pop lst) acc))
+           (reverse acc))
+  nil
+#+end_src
+
+Ok, I don't understand =dotimes= yet.
+
+Well, I guess I didn't really have to use it after all because I could just use
+=substring= to extract strings and recursion to collect everything. That said,
+there's probably a fancier way of doing this with =seq-mapn= or similar
+functions.
