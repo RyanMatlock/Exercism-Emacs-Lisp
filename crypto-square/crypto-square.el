@@ -29,6 +29,8 @@ Note that C is for columns and R is for rows."
         (t (error "SEQ must be a sequence."))))
 
 (defun normalized-text-to-block (text)
+  "Convert string TEXT to a list of strings of length R, given by the
+(CAR (RECTANGLE-VALUES TEXT))."
   ;; padding shouldn't change the values of r and c, so we can recalculate r
   ;; here
   (let* ((rect-vals (rectangle-values text))
@@ -40,6 +42,8 @@ Note that C is for columns and R is for rows."
     (nt2b-helper text '())))
 
 (defun block-to-ciphertext (block &optional sep)
+  "Convert BLOCK (a list of strings of identical size) to cipher text separated
+by SEP, which defaults to the space character."
   (defun b2ct-helper (bs block index acc)
     (if (< index bs)
         (let ((chunk
@@ -53,6 +57,7 @@ Note that C is for columns and R is for rows."
     (mapconcat #'identity (b2ct-helper block-size block 0 '()) sep)))
 
 (defun encipher (plaintext)
+  "Convert string PLAINTEXT to a cipher using the crypto square algorithm."
   (let* ((text (normalize plaintext))
          (rect-vals (rectangle-values text))
          (c (car rect-vals))
