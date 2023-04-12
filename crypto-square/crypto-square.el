@@ -34,12 +34,17 @@ Note that C is for columns and R is for rows."
   ;; padding shouldn't change the values of r and c, so we can recalculate r
   ;; here
   (let* ((rect-vals (rectangle-values text))
-         (r (car rect-vals)))
-    (defun nt2b-helper (text acc)
-      (if (not (zerop (length text)))
-          (nt2b-helper (substring text r) (cons (substring text 0 r) acc))
-        (reverse acc)))
-    (nt2b-helper text '())))
+         (block-size (car rect-vals))
+         (text-len (length text))
+         (starts (number-sequence 0 (- text-len block-size) block-size))
+         (ends (number-sequence block-size text-len block-size))
+         (indices-alist (seq-mapn #'(lambda (x y) (cons x y))
+                                  starts
+                                  ends)))
+    (seq-mapn #'(lambda (indices) (let ((start (car indices))
+                                        (end (cdr indices)))
+                                    (substring text start end)))
+              indices-alist)))
 
 (defun block-to-ciphertext (block &optional sep)
   "Convert BLOCK (a list of strings of identical size) to cipher text separated
