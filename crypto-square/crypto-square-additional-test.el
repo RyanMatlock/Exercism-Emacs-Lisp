@@ -20,3 +20,6 @@
 
 (ert-deftest rectangle-values-prime-length ()
   (should (equal '(5 . 4) (rectangle-values (make-list 17 t)))))
+
+(ert-deftest rectangle-values-length13-string ()
+  (should (equal '(4 . 4) (rectangle-values "foobarbazquxt"))))

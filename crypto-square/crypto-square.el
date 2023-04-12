@@ -23,9 +23,9 @@ Note that C is for columns and R is for rows."
   (cond ((sequencep seq)
          (let* ((len (length seq))
                 (c (ceiling (sqrt len))))
-           (if (= (* c c) len)
-               (cons c c)
-             (cons c (1- c)))))
+           (if (>= (* c (1- c)) len)
+               (cons c (1- c))
+             (cons c c))))
         (t (error "SEQ must be a sequence."))))
 
 (defun encipher (plaintext)
