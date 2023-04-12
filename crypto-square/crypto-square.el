@@ -52,8 +52,12 @@ Note that C is for columns and R is for rows."
     (mapconcat #'identity (b2ct-helper block-size block 0 '()) sep)))
 
 (defun encipher (plaintext)
-;;; Code:
-  )
+  (let* ((text (normalize plaintext))
+         (rect-vals (rectangle-values text))
+         (c (car rect-vals))
+         (r (cdr rect-vals))
+         (padded-text (string-pad text (* r c))))
+    (block-to-ciphertext c (normalized-text-to-block padded-text))))
 
 (provide 'crypto-square)
 ;;; crypto-square.el ends here
