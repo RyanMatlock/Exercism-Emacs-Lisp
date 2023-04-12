@@ -28,6 +28,17 @@ Note that C is for columns and R is for rows."
              (cons c c))))
         (t (error "SEQ must be a sequence."))))
 
+(defun normalized-text-to-block (text)
+  ;; padding shouldn't change the values of r and c, so we can recalculate r
+  ;; here
+  (let* ((rect-vals (rectangle-values text))
+         (r (car rect-vals)))
+    (defun nt2b-helper (text acc)
+      (if (not (zerop (length text)))
+          (nt2b-helper (substring text r) (cons (substring text 0 r) acc))
+        (reverse acc)))
+    (nt2b-helper text '())))
+
 (defun block-to-ciphertext (block-size block &optional sep)
   (defun b2ct-helper (bs block index acc)
     (if (< index bs)
