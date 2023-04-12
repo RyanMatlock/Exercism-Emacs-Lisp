@@ -26,3 +26,226 @@ Well, I guess I didn't really have to use it after all because I could just use
 =substring= to extract strings and recursion to collect everything. That said,
 there's probably a fancier way of doing this with =seq-mapn= or similar
 functions.
+
+* Passing locally, failing Exercism's tests
+
+#+begin_example
+  We received the following error when we ran your code:
+  Loading /mnt/exercism-iteration/crypto-square.el (source)...
+  Running 8 tests (2023-04-12 03:35:06+0000, selector `t')
+  Test 54-character-plaintext-results-in-7-chunks-the-last-two-with-trailing-spaces backtrace:
+    signal(void-function (string-pad))
+    apply(signal (void-function (string-pad)))
+    (setq value-32 (apply fn-30 args-31))
+    (unwind-protect (setq value-32 (apply fn-30 args-31)) (setq form-des
+    (if (unwind-protect (setq value-32 (apply fn-30 args-31)) (setq form
+    (let (form-description-34) (if (unwind-protect (setq value-32 (apply
+    (let ((value-32 'ert-form-evaluation-aborted-33)) (let (form-descrip
+    (let* ((fn-30 #'equal) (args-31 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-30 #'equal) (args-31 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-30 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name 54-character-plaintext-results-in-7-c
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests [#s(ert-test 
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/crypto-squa
+    command-line()
+    normal-top-level()
+  Test 54-character-plaintext-results-in-7-chunks-the-last-two-with-trailing-spaces condition:
+      (void-function string-pad)
+     FAILED  1/8  54-character-plaintext-results-in-7-chunks-the-last-two-with-trailing-spaces (0.000226 sec)
+
+  Test 8-character-plaintext-results-in-3-chunks-the-last-one-with-a-trailing-space backtrace:
+    signal(void-function (string-pad))
+    apply(signal (void-function (string-pad)))
+    (setq value-27 (apply fn-25 args-26))
+    (unwind-protect (setq value-27 (apply fn-25 args-26)) (setq form-des
+    (if (unwind-protect (setq value-27 (apply fn-25 args-26)) (setq form
+    (let (form-description-29) (if (unwind-protect (setq value-27 (apply
+    (let ((value-27 'ert-form-evaluation-aborted-28)) (let (form-descrip
+    (let* ((fn-25 #'equal) (args-26 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-25 #'equal) (args-26 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-25 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name 8-character-plaintext-results-in-3-ch
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests [#s(ert-test 
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/crypto-squa
+    command-line()
+    normal-top-level()
+  Test 8-character-plaintext-results-in-3-chunks-the-last-one-with-a-trailing-space condition:
+      (void-function string-pad)
+     FAILED  2/8  8-character-plaintext-results-in-3-chunks-the-last-one-with-a-trailing-space (0.000141 sec)
+
+  Test 9-character-plaintext-results-in-3-chunks-of-3-characters backtrace:
+    signal(void-function (string-pad))
+    apply(signal (void-function (string-pad)))
+    (setq value-22 (apply fn-20 args-21))
+    (unwind-protect (setq value-22 (apply fn-20 args-21)) (setq form-des
+    (if (unwind-protect (setq value-22 (apply fn-20 args-21)) (setq form
+    (let (form-description-24) (if (unwind-protect (setq value-22 (apply
+    (let ((value-22 'ert-form-evaluation-aborted-23)) (let (form-descrip
+    (let* ((fn-20 #'equal) (args-21 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-20 #'equal) (args-21 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-20 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name 9-character-plaintext-results-in-3-ch
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests ... :test-map
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/crypto-squa
+    command-line()
+    normal-top-level()
+  Test 9-character-plaintext-results-in-3-chunks-of-3-characters condition:
+      (void-function string-pad)
+     FAILED  3/8  9-character-plaintext-results-in-3-chunks-of-3-characters (0.000148 sec)
+
+  Test empty-plaintext-results-in-an-empty-ciphertext backtrace:
+    signal(void-function (string-pad))
+    apply(signal (void-function (string-pad)))
+    (setq value-2 (apply fn-0 args-1))
+    (unwind-protect (setq value-2 (apply fn-0 args-1)) (setq form-descri
+    (if (unwind-protect (setq value-2 (apply fn-0 args-1)) (setq form-de
+    (let (form-description-4) (if (unwind-protect (setq value-2 (apply f
+    (let ((value-2 'ert-form-evaluation-aborted-3)) (let (form-descripti
+    (let* ((fn-0 #'equal) (args-1 (condition-case err (let ((signal-hook
+    (let ((lexical-binding t)) (let* ((fn-0 #'equal) (args-1 (condition-
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-0 #'equal) (a
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name empty-plaintext-results-in-an-empty-c
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests ... :test-map
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/crypto-squa
+    command-line()
+    normal-top-level()
+  Test empty-plaintext-results-in-an-empty-ciphertext condition:
+      (void-function string-pad)
+     FAILED  4/8  empty-plaintext-results-in-an-empty-ciphertext (0.000132 sec)
+
+  Test lowercase backtrace:
+    signal(void-function (string-pad))
+    apply(signal (void-function (string-pad)))
+    (setq value-7 (apply fn-5 args-6))
+    (unwind-protect (setq value-7 (apply fn-5 args-6)) (setq form-descri
+    (if (unwind-protect (setq value-7 (apply fn-5 args-6)) (setq form-de
+    (let (form-description-9) (if (unwind-protect (setq value-7 (apply f
+    (let ((value-7 'ert-form-evaluation-aborted-8)) (let (form-descripti
+    (let* ((fn-5 #'equal) (args-6 (condition-case err (let ((signal-hook
+    (let ((lexical-binding t)) (let* ((fn-5 #'equal) (args-6 (condition-
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-5 #'equal) (a
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name lowercase :documentation nil :body (c
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests ... :test-map
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/crypto-squa
+    command-line()
+    normal-top-level()
+  Test lowercase condition:
+      (void-function string-pad)
+     FAILED  5/8  lowercase (0.000133 sec)
+
+  Test normalization-results-in-empty-plaintext backtrace:
+    signal(void-function (string-pad))
+    apply(signal (void-function (string-pad)))
+    (setq value-37 (apply fn-35 args-36))
+    (unwind-protect (setq value-37 (apply fn-35 args-36)) (setq form-des
+    (if (unwind-protect (setq value-37 (apply fn-35 args-36)) (setq form
+    (let (form-description-39) (if (unwind-protect (setq value-37 (apply
+    (let ((value-37 'ert-form-evaluation-aborted-38)) (let (form-descrip
+    (let* ((fn-35 #'equal) (args-36 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-35 #'equal) (args-36 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-35 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name normalization-results-in-empty-plaint
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests ... :test-map
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/crypto-squa
+    command-line()
+    normal-top-level()
+  Test normalization-results-in-empty-plaintext condition:
+      (void-function string-pad)
+     FAILED  6/8  normalization-results-in-empty-plaintext (0.000135 sec)
+
+  Test remove-punctuation backtrace:
+    signal(void-function (string-pad))
+    apply(signal (void-function (string-pad)))
+    (setq value-17 (apply fn-15 args-16))
+    (unwind-protect (setq value-17 (apply fn-15 args-16)) (setq form-des
+    (if (unwind-protect (setq value-17 (apply fn-15 args-16)) (setq form
+    (let (form-description-19) (if (unwind-protect (setq value-17 (apply
+    (let ((value-17 'ert-form-evaluation-aborted-18)) (let (form-descrip
+    (let* ((fn-15 #'equal) (args-16 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-15 #'equal) (args-16 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-15 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name remove-punctuation :documentation nil
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests ... :test-map
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/crypto-squa
+    command-line()
+    normal-top-level()
+  Test remove-punctuation condition:
+      (void-function string-pad)
+     FAILED  7/8  remove-punctuation (0.000147 sec)
+
+  Test remove-spaces backtrace:
+    signal(void-function (string-pad))
+    apply(signal (void-function (string-pad)))
+    (setq value-12 (apply fn-10 args-11))
+    (unwind-protect (setq value-12 (apply fn-10 args-11)) (setq form-des
+    (if (unwind-protect (setq value-12 (apply fn-10 args-11)) (setq form
+    (let (form-description-14) (if (unwind-protect (setq value-12 (apply
+    (let ((value-12 'ert-form-evaluation-aborted-13)) (let (form-descrip
+    (let* ((fn-10 #'equal) (args-11 (condition-case err (let ((signal-ho
+    (let ((lexical-binding t)) (let* ((fn-10 #'equal) (args-11 (conditio
+    (closure (t) nil (let ((lexical-binding t)) (let* ((fn-10 #'equal) (
+    ert--run-test-internal(#s(ert--test-execution-info :test #s(ert-test
+    ert-run-test(#s(ert-test :name remove-spaces :documentation nil :bod
+    ert-run-or-rerun-test(#s(ert--stats :selector t :tests ... :test-map
+    ert-run-tests(t #f(compiled-function (event-type &rest event-args) #
+    ert-run-tests-batch(nil)
+    ert-run-tests-batch-and-exit()
+    command-line-1(("-l" "ert" "-l" "/mnt/exercism-iteration/crypto-squa
+    command-line()
+    normal-top-level()
+  Test remove-spaces condition:
+      (void-function string-pad)
+     FAILED  8/8  remove-spaces (0.000145 sec)
+
+
+  Ran 8 tests, 0 results as expected, 8 unexpected (2023-04-12 03:35:07+0000, 1.063684 sec)
+
+  8 unexpected results:
+     FAILED  54-character-plaintext-results-in-7-chunks-the-last-two-with-trailing-spaces
+
+     FAILED  8-character-plaintext-results-in-3-chunks-the-last-one-with-a-trailing-space
+
+     FAILED  9-character-plaintext-results-in-3-chunks-of-3-characters
+
+     FAILED  empty-plaintext-results-in-an-empty-ciphertext
+
+     FAILED  lowercase
+
+     FAILED  normalization-results-in-empty-plaintext
+
+     FAILED  remove-punctuation
+
+     FAILED  remove-spaces
+#+end_example
+
+I guess I'm not allowed to use =string-pad=, so I'll have to write my own.
+
+Well, it passed with the DIY =cb--string-pad= function.
