@@ -56,6 +56,24 @@ by SEP, which defaults to the space character."
         (sep (or sep " ")))
     (mapconcat #'identity (b2ct-helper block-size block 0 '()) sep)))
 
+;; Exercism complained about my use of string-pad in my original solution
+(defun cb--string-pad (str n &optional padding)
+  "Pad string STR with string PADDING (default: space character) so it reaches
+length N; if (< N (LENGTH STR)), return STR unchanged; error if STR isn't a
+string or N isn't a whole number."
+  (cond ((and (stringp str) (wholenump n))
+         (let ((padding (or padding " "))
+               (diff (- n (length str))))
+           (if (> diff 0)
+               (mapconcat #'identity
+                          (append (seq-mapn #'string str)
+                                  (make-list diff padding))
+                          "")
+             str)))
+        ((not (stringp str)) (error "STR must be a string."))
+        ((not (wholenump n)) (error "N must be a whole number."))
+        (t (error "Something went wrong."))))
+
 (defun encipher (plaintext)
   "Convert string PLAINTEXT to a cipher using the crypto square algorithm."
   (let* ((text (normalize plaintext))

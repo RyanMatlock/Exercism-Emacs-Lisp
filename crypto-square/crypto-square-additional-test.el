@@ -4,6 +4,7 @@
 (declare-function normalized-text-to-block "crypto-square.el" (text))
 (declare-function
  block-to-ciphertext "crypto-square.el" ((block &optional sep)))
+(declare-function cb--string-pad "crypto-square.el" (str n &optional padding))
 
 (ert-deftest normalize-already-normal ()
   (let ((normal-text "foobarbaz"))
@@ -40,3 +41,13 @@
   (should
    (string= "fazt orq  obu  bax "
             (block-to-ciphertext '("foob" "arba" "zqux" "t    ")))))
+
+(ert-deftest cb--string-pad-str-longer-than-n ()
+  (let* ((longstring "foobarbaz")
+         (n (- (length longstring) 3)))
+    (should (string= longstring (cb--string-pad longstring n)))))
+
+(ert-deftest cb--string-pad-equivalent-to-string-pad ()
+  (let ((str "foobar")
+        (n 11))
+    (should (string= (string-pad str n) (cb--string-pad str n)))))
