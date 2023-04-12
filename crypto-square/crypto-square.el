@@ -80,7 +80,7 @@ string or N isn't a whole number."
          (rect-vals (rectangle-values text))
          (c (car rect-vals))
          (r (cdr rect-vals))
-         (padded-text (string-pad text (* r c))))
+         (padded-text (cb--string-pad text (* r c))))
     (block-to-ciphertext (normalized-text-to-block padded-text))))
 
 (provide 'crypto-square)
