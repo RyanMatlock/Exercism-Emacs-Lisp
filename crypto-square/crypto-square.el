@@ -49,17 +49,13 @@ Note that C is for columns and R is for rows."
 (defun block-to-ciphertext (block &optional sep)
   "Convert BLOCK (a list of strings of identical size) to cipher text separated
 by SEP, which defaults to the space character."
-  (defun b2ct-helper (bs block index acc)
-    (if (< index bs)
-        (let ((chunk
-               (mapconcat
-                #'string
-                (mapcar #'(lambda (str) (elt str index)) block) "")))
-          (b2ct-helper bs block (1+ index) (cons chunk acc)))
-      (reverse acc)))
-  (let ((block-size (length (car block)))
-        (sep (or sep " ")))
-    (mapconcat #'identity (b2ct-helper block-size block 0 '()) sep)))
+  (let* ((block-size (length (car block)))
+         (sep (or sep " "))
+         (indices (number-sequence 0 (1- block-size))))
+    (mapconcat #'(lambda (i)
+                   (mapcar #'(lambda (str) (elt str i)) block))
+               indices
+               sep)))
 
 ;; Exercism complained about my use of string-pad in my original solution
 (defun cb--string-pad (str n &optional padding)
