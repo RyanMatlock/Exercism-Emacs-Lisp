@@ -249,3 +249,180 @@ functions.
 I guess I'm not allowed to use =string-pad=, so I'll have to write my own.
 
 Well, it passed with the DIY =cb--string-pad= function.
+
+* Refactoring
+
+#+begin_src emacs-lisp
+  (defun normalized-text-to-block (text)
+    "Convert string TEXT to a list of strings of length R, given by the
+  (CAR (RECTANGLE-VALUES TEXT))."
+    ;; padding shouldn't change the values of r and c, so we can recalculate r
+    ;; here
+    (let* ((rect-vals (rectangle-values text))
+           (r (car rect-vals)))
+      (defun nt2b-helper (text acc)
+        (if (not (zerop (length text)))
+            (nt2b-helper (substring text r) (cons (substring text 0 r) acc))
+          (reverse acc)))
+      (nt2b-helper text '())))
+
+  (defun block-to-ciphertext (block &optional sep)
+    "Convert BLOCK (a list of strings of identical size) to cipher text separated
+  by SEP, which defaults to the space character."
+    (defun b2ct-helper (bs block index acc)
+      (if (< index bs)
+          (let ((chunk
+                 (mapconcat
+                  #'string
+                  (mapcar #'(lambda (str) (elt str index)) block) "")))
+            (b2ct-helper bs block (1+ index) (cons chunk acc)))
+        (reverse acc)))
+    (let ((block-size (length (car block)))
+          (sep (or sep " ")))
+      (mapconcat #'identity (b2ct-helper block-size block 0 '()) sep)))
+#+end_src
+
+I think there's probably a smarter way of doing these that doesn't use
+recursion.
+
+#+begin_src emacs-lisp
+  (defun normalized-text-to-block (text)
+    "Convert string TEXT to a list of strings of length R, given by the
+  (CAR (RECTANGLE-VALUES TEXT))."
+    ;; padding shouldn't change the values of r and c, so we can recalculate r
+    ;; here
+    (let* ((rect-vals (rectangle-values text))
+           (r (car rect-vals))
+           (c (cdr rect-vals))
+           (indices-alist '((0 . 3) (3 . 6) (6 . 9))))
+      ;; (defun nt2b-helper (text acc)
+      ;;   (if (not (zerop (length text)))
+      ;;       (nt2b-helper (substring text r) (cons (substring text 0 r) acc))
+      ;;     (reverse acc)))
+      ;; (nt2b-helper text '())
+      (seq-mapn #'(lambda (indices) (let ((start (car indices))
+                                          (end (cdr indices)))
+                                      (substring text start end)))
+                indices-alist)))
+#+end_src
+
+I plugged in the indices I knew worked for the =foobarbaz= input, so I just
+need to figure out how to determine them programatically.
+
+#+begin_src emacs-lisp
+  (defun normalized-text-to-block (text)
+    "Convert string TEXT to a list of strings of length R, given by the
+  (CAR (RECTANGLE-VALUES TEXT))."
+    ;; padding shouldn't change the values of r and c, so we can recalculate r
+    ;; here
+    (let* ((rect-vals (rectangle-values text))
+           (r (car rect-vals))
+           (c (cdr rect-vals))
+           (starts '(0 3 6))
+           (ends '(3 6 9))
+           (indices-alist (seq-mapn #'(lambda (x y) (cons x y))
+                                    starts
+                                    ends)))
+      (seq-mapn #'(lambda (indices) (let ((start (car indices))
+                                          (end (cdr indices)))
+                                      (substring text start end)))
+                indices-alist)))
+#+end_src
+
+Thinking about it in terms of starts and ends separately is helpful. It needs
+to be a =number-sequence=, but figuring out where to use =r= and =c= is a
+little tricky. Actually, no it's not; we know that the sequences are all of
+length =r=.
+
+#+begin_src emacs-lisp
+  ELISP> (let ((r 3)
+               (len 9))
+  (number-sequence 0 (- len r) r))
+  (0 3 6)
+
+  ELISP> (let ((r 3)
+               (len 9))
+  (number-sequence r len r))
+  (3 6 9)
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun normalized-text-to-block (text)
+    "Convert string TEXT to a list of strings of length R, given by the
+  (CAR (RECTANGLE-VALUES TEXT))."
+    ;; padding shouldn't change the values of r and c, so we can recalculate r
+    ;; here
+    (let* ((rect-vals (rectangle-values text))
+           (block-size (car rect-vals))
+           (text-len (length text))
+           (starts (number-sequence 0 (- text-len block-size) block-size))
+           (ends (number-sequence block-size text-len block-size))
+           (indices-alist (seq-mapn #'(lambda (x y) (cons x y))
+                                    starts
+                                    ends)))
+      (seq-mapn #'(lambda (indices) (let ((start (car indices))
+                                          (end (cdr indices)))
+                                      (substring text start end)))
+                indices-alist)))
+#+end_src
+
+It works!
+
+#+begin_src emacs-lisp
+  (defun block-to-ciphertext (block &optional sep)
+    "Convert BLOCK (a list of strings of identical size) to cipher text separated
+  by SEP, which defaults to the space character."
+    ;; (defun b2ct-helper (bs block index acc)
+    ;;   (if (< index bs)
+    ;;       (let ((chunk
+    ;;              (mapconcat
+    ;;               #'string
+    ;;               (mapcar #'(lambda (str) (elt str index)) block) "")))
+    ;;         (b2ct-helper bs block (1+ index) (cons chunk acc)))
+    ;;     (reverse acc)))
+    (let ((block-size (length (car block)))
+          (sep (or sep " "))
+          (indices (number-sequence 0 (1- block-size))))
+      (mapconcat #'identity
+                 (mapconcat #'(lambda (i) nil)
+                            (mapcar #'(lambda (str) (elt str i)) block)
+                            indices)
+                 sep)))
+#+end_src
+
+This is all wrong, and I'm struggling with it.
+
+#+begin_src emacs-lisp
+  ELISP> (let* ((str "foo")
+                (indices (number-sequence 0 (1- (length str)))))
+  (mapconcat #'string (mapcar #'(lambda (i) (elt str i)) indices) ""))
+  "foo"
+#+end_src
+
+For some reason, I'm still not getting how to bind a variable to the elements
+of the =block=.
+
+#+begin_src emacs-lisp
+    ELISP> (let* ((block '("foo" "bar" "baz"))
+                  (bs (length (car block)))
+                  (indices (number-sequence 0 (1- bs)))
+                  (str nil))
+             (mapconcat #'(lambda (s) (setq str s))
+                        (mapconcat #'(lambda (i) (string (elt
+                                                          str i)))
+                                   indices ".")))
+#+end_src
+
+I mean, that certainly isn't even close to right.
+
+As always, I turn to stackoverflow ([[https://stackoverflow.com/a/45865100][Nested mapcars in common lisp]]):
+
+#+begin_src common-lisp
+  (mapcan (lambda (x)
+            (mapcar (lambda (y) (list x y))
+                    '(aa bb cc dd)))
+          '(a b c))
+  ==> ((A AA) (A BB) (A CC) (A DD)
+       (B AA) (B BB) (B CC) (B DD)
+       (C AA) (C BB) (C CC) (C DD))
+#+end_src
