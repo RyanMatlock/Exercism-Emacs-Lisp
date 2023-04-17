@@ -22,21 +22,8 @@ ordered letter list (signature), e.g. 'stop' and 'pots' should both produce
 (defun anagrams-for (subject candidates)
   "Determine which, if any, of the words in candidates are anagrams of
 subject."
-
-  (defun anagrams-for-helper (subject candidates anagrams)
-    "Build a list of anagrams of subject from candidates."
-    ;; only using nested if statements instead of cond due to let statement
-    ;; if candidates is nil, you can't take the cdr of it
-    (if candidates
-        (let ((candidate (car candidates))
-              (rest (cdr candidates)))
-          (if (anagrams-p subject candidate)
-              (anagrams-for-helper subject rest (cons candidate anagrams))
-            (anagrams-for-helper subject rest anagrams)))
-      ;; return anagrams when out of candidates
-      ;; reverse anagrams to present them in order found in candidates
-      (reverse anagrams)))
-  (anagrams-for-helper subject candidates '()))
+  (seq-filter
+   #'(lambda (candidate) (anagrams-p subject candidate)) candidates))
 
 (provide 'anagram)
 ;;; anagram.el ends here
