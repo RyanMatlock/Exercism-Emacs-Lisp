@@ -2,19 +2,20 @@
 
 ;;; Commentary:
 
-(defun anagrams-for (subject candidates)
-  "Determine which, if any, of the words in candidates are anagrams of
-subject."
-  (defun word-to-letters-signature (word)
-    "Convert a word to an alphabetically ascending list of letters, including
-repeats.
+(defun word-signature (word)
+  "Convert string WORD to an alphabetically ascending list of letters,
+including repeats.
 
 Words that are anagrams should possess the same ordered letter list,
 e.g. 'stop' and 'pots' should both produce ('o' 'p' 's' 't')."
-    ;; technically, the outer mapcar isn't necessary, but the output is chars
-    ;; AKA ints, so converting them to strings makes debugging easier
-    (sort (mapcar #'string (mapcar #'identity (downcase word)))
-          'string<))
+  ;; technically, the outer mapcar isn't necessary, but the output is chars
+  ;; AKA ints, so converting them to strings makes debugging easier
+  (sort (mapcar #'string (mapcar #'identity (downcase word)))
+        'string<))
+
+(defun anagrams-for (subject candidates)
+  "Determine which, if any, of the words in candidates are anagrams of
+subject."
   (defun identical-letter-list-p (xs ys)
     "Determine if two ordered lists of lowercase letters *of same length* are
 identical. anagrams-p will ensure that they're the same length."
@@ -31,8 +32,8 @@ identical. anagrams-p will ensure that they're the same length."
     "Determine if cand is an anagram of subj."
     (and (not (string= (downcase subj) (downcase cand)))
          (eq (length subj) (length cand))
-         (identical-letter-list-p (word-to-letters-signature subj)
-                                  (word-to-letters-signature cand))))
+         (identical-letter-list-p (word-signature subj)
+                                  (word-signature cand))))
   (defun anagrams-for-helper (subject candidates anagrams)
     "Build a list of anagrams of subject from candidates."
     ;; only using nested if statements instead of cond due to let statement
