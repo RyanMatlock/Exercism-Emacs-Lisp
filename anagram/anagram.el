@@ -11,27 +11,16 @@ ordered letter list (signature), e.g. 'stop' and 'pots' should both produce
 ('o' 'p' 's' 't')."
   (sort (mapcar #'string (downcase word)) #'string<))
 
+(defun anagrams-p (subj cand)
+  "Determine if cand is an anagram of subj."
+  (and (not (string= subj cand))
+       (equal (word-signature subj)
+              (word-signature cand))))
+
 (defun anagrams-for (subject candidates)
   "Determine which, if any, of the words in candidates are anagrams of
 subject."
-  (defun identical-letter-list-p (xs ys)
-    "Determine if two ordered lists of lowercase letters *of same length* are
-identical. anagrams-p will ensure that they're the same length."
-    (if (and xs ys)
-        (and
-         ;; check that first elements are the same
-         (string= (car xs) (car ys))
-         ;; recursive step
-         (identical-letter-list-p (cdr xs) (cdr ys)))
-      ;; if xs and ys are empty, then you've made it to the end without
-      ;; differences, so they're the same => t
-      t))
-  (defun anagrams-p (subj cand)
-    "Determine if cand is an anagram of subj."
-    (and (not (string= (downcase subj) (downcase cand)))
-         (eq (length subj) (length cand))
-         (identical-letter-list-p (word-signature subj)
-                                  (word-signature cand))))
+
   (defun anagrams-for-helper (subject candidates anagrams)
     "Build a list of anagrams of subject from candidates."
     ;; only using nested if statements instead of cond due to let statement
