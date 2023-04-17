@@ -25,3 +25,9 @@
   (let ((word "word"))
     (should-not (anagrams-p word word))))
 
+(ert-deftest anagrams-p-same-word-different-case ()
+  (let ((word "foobar"))
+    (should-not (anagrams-p word (upcase word)))))
+
+(ert-deftest anagrams-p-mixed-case ()
+  (should (anagrams-p "Silent" "LISTEN")))

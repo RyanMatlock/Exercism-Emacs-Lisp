@@ -9,13 +9,15 @@ including repeats.
 The motivation for this is that words that are anagrams should possess the same
 ordered letter list (signature), e.g. 'stop' and 'pots' should both produce
 ('o' 'p' 's' 't')."
-  (sort (mapcar #'string (downcase word)) #'string<))
+  (sort (mapcar #'string word) #'string<))
 
 (defun anagrams-p (subj cand)
   "Determine if cand is an anagram of subj."
-  (and (not (string= subj cand))
-       (equal (word-signature subj)
-              (word-signature cand))))
+  (let ((subj (downcase subj))
+        (cand (downcase cand)))
+    (and (not (string= subj cand))
+         (equal (word-signature subj)
+                (word-signature cand)))))
 
 (defun anagrams-for (subject candidates)
   "Determine which, if any, of the words in candidates are anagrams of
