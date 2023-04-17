@@ -6,12 +6,10 @@
   "Convert string WORD to an alphabetically ascending list of letters,
 including repeats.
 
-Words that are anagrams should possess the same ordered letter list,
-e.g. 'stop' and 'pots' should both produce ('o' 'p' 's' 't')."
-  ;; technically, the outer mapcar isn't necessary, but the output is chars
-  ;; AKA ints, so converting them to strings makes debugging easier
-  (sort (mapcar #'string (mapcar #'identity (downcase word)))
-        'string<))
+The motivation for this is that words that are anagrams should possess the same
+ordered letter list (signature), e.g. 'stop' and 'pots' should both produce
+('o' 'p' 's' 't')."
+  (sort (mapcar #'string (downcase word)) #'string<))
 
 (defun anagrams-for (subject candidates)
   "Determine which, if any, of the words in candidates are anagrams of
