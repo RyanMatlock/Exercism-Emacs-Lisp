@@ -1,0 +1,72 @@
+#+title: Acronym
+
+* First iteration
+
+#+begin_src emacs-lisp
+  ;;; Commentary: This is probably an overly verbose way of doing it, but it's
+  ;;; also easier (for me) to understand this way.
+
+  (defun acronym (phrase)
+    "Convert phrase to acronym. Hyphens count as whitespace, and all other
+  punctuation is considered part of the word to which it's atttached."
+    (defun hyphens-to-whitespace (phrase)
+      "Replace hyphens with whitespace."
+      (replace-regexp-in-string "-" " " phrase))
+    (defun phrase-to-words (phrase)
+      "Split phrase on whitespace characters."
+      (split-string phrase "[[:space:]]+"))
+    (defun word-to-letters (word)
+      "Turn a word into a list of letters."
+      (mapcar #'string word))
+    (defun extract-initials-from-words (words)
+      "Extract first letter of each word from list of words"
+      (mapcar #'car (mapcar #'word-to-letters words)))
+    (upcase (mapconcat
+             #'identity
+             (extract-initials-from-words
+              (phrase-to-words (hyphens-to-whitespace phrase))) "")))
+#+end_src
+
+* Refactoring
+
+#+begin_src emacs-lisp
+  (defun acronym (phrase)
+    "Convert string PHRASE to an acronym (i.e. concatenating the uppercase first
+  letter of each word). Hyphens count as whitespace (i.e. word separators), and
+  all other punctuation is considered part of the word to which it's atttached."
+    (let* ((phrase (replace-regexp-in-string "-" " " phrase))
+           (words (split-string phrase "[[:space:]]+"))
+           (initial-chars (mapcar #'(lambda (word) (elt word 0)) words)))
+      (upcase (mapconcat #'string initial-chars ""))))
+#+end_src
+
+This is way more concise, and the =let= expression still gives meaning to the
+various components the way the functions did previously.
+
+Actually, I can do even better:
+
+#+begin_src emacs-lisp
+  (defun acronym (phrase)
+    "Convert string PHRASE to an acronym (i.e. concatenating the uppercase first
+  letter of each word). Hyphens count as whitespace (i.e. word separators), and
+  all other punctuation is considered part of the word to which it's atttached."
+    (let* (;; (phrase (replace-regexp-in-string "-" " " phrase))
+           (words (split-string phrase "[-[:space:]]+"))
+           (initial-chars (mapcar #'(lambda (word) (elt word 0)) words)))
+      (upcase (mapconcat #'string initial-chars ""))))
+#+end_src
+
+No need to redefine =phrase=; I can just split on whitespace or hyphens since
+they're both word separators.
+
+Final version:
+
+#+begin_src emacs-lisp
+  (defun acronym (phrase)
+    "Convert string PHRASE to an acronym (i.e. concatenating the uppercase first
+  letter of each word). Hyphens and whitespace are word separators, and all other
+  punctuation is considered part of the word to which it's atttached."
+    (let* ((words (split-string phrase "[-[:space:]]+"))
+           (initial-chars (mapcar #'(lambda (word) (elt word 0)) words)))
+      (upcase (mapconcat #'string initial-chars ""))))
+#+end_src
