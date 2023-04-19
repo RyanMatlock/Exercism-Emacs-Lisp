@@ -3,6 +3,9 @@
 (declare-function count-element "word-count.el" (elem list))
 (declare-function count-elements "word-count.el" (lst))
 
+(ert-deftest sentence-to-words-empty-string ()
+  (should-not (sentence-to-words "")))
+
 (ert-deftest sentence-to-words-simple-sentence ()
   (should (equal '("hello" "world") (sentence-to-words "Hello, World!"))))
 
@@ -10,13 +13,13 @@
   (should (equal '("hello" "down" "there")
                  (sentence-to-words "Hello\ndown there!!"))))
 
-;; (ert-deftest sentence-to-words-pathological-case ()
-;;   (let ((pathological-sentence
-;;          (concat "\"That's the password: 'PASSWORD 123'!\", cried the Special "
-;;                  "Agent.\nSo I fled.")))
-;;     (should (equal '("that's" "the" "password" "password" "123" "cried" "the"
-;;                      "special" "agent" "so" "i" "fled")
-;;                    (sentence-to-words pathological-sentence)))))
+(ert-deftest sentence-to-words-pathological-case ()
+  (let ((pathological-sentence
+         (concat "\"That's the password: 'PASSWORD 123'!\", cried the Special "
+                 "Agent.\nSo I fled.")))
+    (should (equal '("that's" "the" "password" "password" "123" "cried" "the"
+                     "special" "agent" "so" "i" "fled")
+                   (sentence-to-words pathological-sentence)))))
 
 (ert-deftest count-element-empty-list ()
   (should (zerop (count-element :foo '()))))
