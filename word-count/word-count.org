@@ -384,3 +384,22 @@ Got it:
                        "\\1" raw-word))
                   raw-words)))))))
 #+end_src
+
+* Semi-related exercise
+What if I wanted to ensure that all the elements of a list are of the same
+type?
+
+#+begin_src emacs-lisp
+  ELISP> (require 'seq)
+  seq
+  ELISP> (let ((list '(1 2 3 4)))
+           (seq-reduce
+            #'(lambda (x y) (equal (type-of x) (type-of y))) list (car list)))
+  nil
+#+end_src
+
+Well, I'm not there yet. Anyway, it might be useful[fn::e.g. when using
+=count-elements= separately from =word-count=, in which case a mixed-type list
+may be passed to it, which could cause an error] to have such a function for
+element comparison because it may be that a list contains elements that can't
+be compared. I can see the advantages of Haskell's type system here.
