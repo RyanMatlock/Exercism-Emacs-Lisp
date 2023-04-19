@@ -1,0 +1,192 @@
+#+title: Word Count
+
+* First iteration
+
+#+begin_src emacs-lisp
+  (defun word-count (sentence)
+    "Count the number of words in a sentence. Words can be numbers, letters, or
+  contractions (letters with an apostrophe), and the count is case insensitive."
+    (defun alist-increment-value (key alist)
+    "Increment value of key in alist; if key is not in alist, add to alist with
+  initial value of 1."
+    (let ((entry (assoc key alist)))
+      (if entry
+          (progn (setcdr entry (1+ (cdr entry)))
+                 ;; need to return the alist because setcdr returns the cons cell
+                 ;; while updating the alist
+                 alist)
+        ;; note that adding a key doesn't update the original alist the way
+        ;; setcdr does; that shouldn't matter given that in either branch of the
+        ;; if statement, you're returning the updated alist
+        (cons (cons key 1) alist))))
+    ;; looking at word-coun-test.el, it appears that the alist is good enough,
+    ;; and I didn't have to format it into a string
+    (defun wc-alist-formatter (wc-alist acc)
+      (let ((entry (car wc-alist)))
+        (if entry
+            (let ((formatted-entry (format "%s: %d" (car entry) (cdr entry))))
+              (wc-alist-formatter (cdr wc-alist) (cons formatted-entry acc)))
+          ;; need to get the order right => reverse the accumulator
+          (mapconcat #'identity (reverse acc) "\n"))))
+    (defun wc-helper (words wc-alist)
+      (let ((word (car words)))
+        ;; need to check that word isn't the empty string in case the sentence
+        ;; passed to word-count is empty
+        ;; (if (and word (not (string= word "")))
+        ;;     (wc-helper (cdr words) (alist-increment-value word wc-alist))
+        ;;   ;; to get the original sentence order
+        ;;   (reverse wc-alist))
+        (cond
+         ;; skip empty strings
+         ((and word (string= word "")) (wc-helper (cdr words) wc-alist))
+         ;; if word isn't the empty string, add it to the alist
+         (word (wc-helper (cdr words) (alist-increment-value word wc-alist)))
+         ;; if you've read all the words, return a reversed list to get the order
+         ;; of the words equivalent to how they appear in the sentence
+         (t (reverse wc-alist)))))
+    (defun strip-punctuation-from-word (word)
+      "Strip punctuation off beginning and end of words."
+      ;; so glad I found out about the [:punct:] character class
+      (replace-regexp-in-string
+       "[[:punct:]]+$" ""
+       (replace-regexp-in-string
+        "^[[:punct:]]+" "" word)))
+    (let* ((words (mapcar #'downcase (split-string sentence "[[:blank:]\n]+")))
+           (processed-words (mapcar #'strip-punctuation-from-word words)))    
+      ;; (wc-alist-formatter (wc-helper processed-words '()) '())
+      (wc-helper processed-words '())))
+#+end_src
+
+That's pretty gross!
+
+* Refactoring
+
+There's actually a sexy recursive way to count the number of words in a
+list---no =setcdr=-ing required! Instead, use =member= to break down the
+list.
+
+Ok, I should be able to do this, but I'm having trouble thinking of how to
+actually do it.
+
+Let's try counting a single, specified element.
+
+#+begin_src emacs-lisp
+  (defun count-element (elem lst)
+    (cond ((or (null lst) (zerop (length lst))) 0)
+          ((member elem lst)
+           (1+ (count-element elem (member elem (cdr-safe lst)))))
+          (t (count-element elem (cdr-safe lst)))))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (count-element ?e (seq-mapn #'identity "member"))
+  3 (#o3, #x3, ?\C-c)
+  ELISP> (count-element ?z (seq-mapn #'identity "member"))
+  0 (#o0, #x0, ?\C-@)
+#+end_src
+
+Buggy but probably not too hard to fix.
+
+#+begin_src emacs-lisp
+  (defun count-element (elem lst)
+    (cond ((or (null lst) (zerop (length lst))) 0)
+          ((member elem lst)
+           ;; (1+ (count-element elem (member elem (cdr-safe lst))))
+           (1+ (count-element elem (cdr-safe lst))))
+          (t (count-element elem (cdr-safe lst)))))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (count-element ?e (seq-mapn #'identity "member"))
+  5 (#o5, #x5, ?\C-e)
+#+end_src
+
+I think I see why it's getting worse. That first check on member should be
+enough.
+
+#+begin_src emacs-lisp
+  (defun count-element (elem lst)
+    (cond ((and (listp lst) (member elem lst))
+           (1+ (count-element elem (cdr-safe lst))))
+          (t 0)))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (count-element ?z (seq-mapn #'identity "member"))
+  0 (#o0, #x0, ?\C-@)
+  ELISP> (count-element ?e (seq-mapn #'identity "member"))
+  5 (#o5, #x5, ?\C-e)
+#+end_src
+
+Nope.
+
+#+begin_src emacs-lisp
+  (defun count-element (elem lst)
+    (let ((first-match (member elem lst)))
+      (cond ((and (listp lst) first-match)
+             (1+ (count-element elem (cdr first-match))))
+            (t 0))))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (count-element ?z (seq-mapn #'identity "member"))
+  0 (#o0, #x0, ?\C-@)
+  ELISP> (count-element ?e (seq-mapn #'identity "member"))
+  2 (#o2, #x2, ?\C-b)
+#+end_src
+
+Ok, I got it, but now I need to figure out how to not double count. Probably
+just =(not (member elem acc))= or something like that.
+
+Got it.
+
+#+begin_src emacs-lisp
+  (defun count-element (elem list)
+    "Count number of times ELEM appears in LIST."
+    (let ((first-match (member elem list)))
+      (cond ((and (listp list) first-match)
+             (1+ (count-element elem (cdr first-match))))
+            (t 0))))
+
+  (defun count-elements (list)
+    "Count elements in LIST and return as an alist, e.g.
+  '((ELEM-1 . P) (ELEM-2 . Q) ... (ELEM-N . R))."
+    (defun ce-helper (xs acc)
+      (let ((x (car-safe xs))
+            (rest (cdr-safe xs))
+            (keys (mapcar #'car acc)))
+        (cond ((and x (not (member x keys)))
+               (ce-helper rest (cons (cons x (count-element x xs)) acc)))
+              (x (ce-helper rest acc))
+              (t (reverse acc)))))
+    (ce-helper list '()))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun word-count (sentence)
+    "Count the number of words in string SENTENCE and return results as a
+  formatted string. Words can be numbers, letters, or contractions (letters with
+  an apostrophe), and the count is case insensitive."
+    (let* ((words (sentence-to-words sentence))
+           (elements-alist (count-elements words)))
+      (mapconcat #'(lambda (ccell)
+                     (let ((word (car ccell))
+                           (count (cdr ccell)))
+                       (format "%s: %d" word count)))
+                 elements-alist
+                 "\n")))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (word-count "My cats are the world's cutest cats.")
+  "my: 1
+  cats: 2
+  are: 1
+  the: 1
+  world's: 1
+  cutest: 1"
+#+end_src
+
+It looks like it's working, so I just need to sort out
+=sentence-to-words=. [Note that the actual =word-count= will return an alist
+rather than a formatted string.]
