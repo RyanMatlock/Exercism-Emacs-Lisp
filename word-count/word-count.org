@@ -190,3 +190,197 @@ Got it.
 It looks like it's working, so I just need to sort out
 =sentence-to-words=. [Note that the actual =word-count= will return an alist
 rather than a formatted string.]
+
+#+begin_src emacs-lisp
+  ELISP> (replace-regexp-in-string "\\(foo\\)bar" "\\1" "foobarbaz")
+  "foobaz"
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (let ((regexp-or "\\|"))
+           (mapcar #'(lambda (w)
+                       (replace-regexp-in-string
+                        (concat ".*\\(\\([[:alpha:]]+'[[:alpha:]]+\\)"
+                                regexp-or
+                                "\\([[:alpha:]]+\\)"
+                                regexp-or
+                                "\\([[:digit:]]+\\)\\).*")
+                        "\\1" w))
+                   (split-string
+                    "They're \"here\" as it were. \"What do you mean, 'They're
+  \"here?\"'"
+                    "[[:space:]]+")))
+  ("e" "e" "s" "t" "e" "t" "o" "u" "n" "e
+  e")
+#+end_src
+
+#+begin_src emacs-lisp
+  (let ((regexp-or "\\|"))
+           (mapcar #'(lambda (w)
+                       (replace-regexp-in-string
+                        (concat ".*??\\(\\([[:alpha:]]+'[[:alpha:]]+\\)"
+                                regexp-or
+                                "\\([[:alpha:]]+\\)"
+                                regexp-or
+                                "\\([[:digit:]]+\\)\\).*")
+                        "\\1" w))
+                   (split-string
+                    "They're \"here\" as it were. \"What do you mean, 'They're
+  \"here?\"'"
+                    "[[:space:]]+")))
+  ("They're" "here" "as" "it" "were" "What" "do" "you" "mean" "They're
+  here")
+#+end_src
+
+Ooh, look at that! Non-greedy capture saves the day! [Note: the issue with the
+newline is that it was literally in the test string, and I was only splitting
+on spaces.]
+
+#+begin_src emacs-lisp
+  (defun sentence-to-words (sentence)
+    (let ((raw-words (split-string sentence "[[:blank:]\n]+"))
+          (re-or "\\|")
+          (contraction "\\([[:alpha:]]+'[[:alpha:]]+\\)")
+          (word "\\([[:alpha:]]+\\)")
+          (number "\\([[:digit:]]+\\)"))
+      (mapcar
+       #'downcase
+       (mapcar
+        #'(lambda (raw-word)
+            (replace-regexp-in-string
+             (concat ".*??\\(" contraction re-or word re-or number "\\).*")
+             "\\1" raw-word)
+            )
+        raw-words))))
+#+end_src
+
+This is /almost/ there, but…
+
+#+begin_example
+  ..F..F...
+
+  F ignore-punctuation-test
+      (ert-test-failed
+       ((should
+         (equal-assoc
+          (word-count "car : carpet as java : javascript!!&@$%^&")
+          '(... ... ... ... ...)))
+        :form
+        (equal-assoc
+         (("car" . 1)
+          (":" . 2)
+          ("carpet" . 1)
+          ("as" . 1)
+          ("java" . 1)
+          ("javascript" . 1))
+         (("javascript" . 1)
+          ("java" . 1)
+          ("as" . 1)
+          ("carpet" . 1)
+          ("car" . 1)))
+        :value nil))
+
+  F no-words-test
+      (ert-test-failed
+       ((should
+         (equal-assoc
+          (word-count "")
+          nil))
+        :form
+        (equal-assoc
+         (("" . 1))
+         nil)
+        :value nil))
+#+end_example
+
+Took care of =no-words-test= with a couple of =cond= expressions and
+=seq-empty-p= checks:
+
+#+begin_src emacs-lisp
+  (defun sentence-to-words (sentence)
+    (let ((raw-words (split-string sentence "[[:blank:]\n]+"))
+          (re-or "\\|")
+          (contraction "\\([[:alpha:]]+'[[:alpha:]]+\\)")
+          (word "\\([[:alpha:]]+\\)")
+          (number "\\([[:digit:]]+\\)"))
+      (cond ((seq-empty-p sentence) '())
+            (t (mapcar
+                #'downcase
+                (mapcar
+                 #'(lambda (raw-word)
+                     (replace-regexp-in-string
+                      (concat
+                       ".*??\\(" contraction re-or word re-or number "\\).*")
+                      "\\1" raw-word))
+               raw-words))))))
+
+  (defun count-elements (list)
+    "Count elements in LIST and return as an alist, e.g.
+  '((ELEM-1 . P) (ELEM-2 . Q) ... (ELEM-N . R))."
+    (defun ce-helper (xs acc)
+      (let ((x (car-safe xs))
+            (rest (cdr-safe xs))
+            (keys (mapcar #'car acc)))
+        (cond ((and x (not (member x keys)))
+               (ce-helper rest (cons (cons x (count-element x xs)) acc)))
+              (x (ce-helper rest acc))
+              (t (reverse acc)))))
+    (cond ((seq-empty-p list) '())
+          (t (ce-helper list '()))))
+#+end_src
+
+** Fixing =sentence-to-words=
+
+#+begin_src emacs-lisp
+  (defun sentence-to-words (sentence)
+    (let ((raw-words (split-string sentence "[[:blank:]\n]+"))
+          (re-or "\\|")
+          (contraction "\\([[:alpha:]]+'[[:alpha:]]+\\)")
+          (word "\\([[:alpha:]]+\\)")
+          (number "\\([[:digit:]]+\\)"))
+      (cond ((seq-empty-p sentence) '())
+            (t (mapcar
+                #'downcase
+                (mapcar
+                 #'(lambda (raw-word)
+                     (replace-regexp-in-string
+                      (concat
+                       ".*??\\(" contraction re-or word re-or number "\\).*")
+                      "\\1" raw-word))
+               raw-words))))))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (sentence-to-words "foo :: bar they're 123")
+  ("foo" "::" "bar" "they're" "123")
+#+end_src
+
+So I need to filter out punctuation on its own.
+
+Got it:
+
+#+begin_src emacs-lisp
+  (defun sentence-to-words (sentence)
+    (let* ((raw-words (split-string sentence "[[:blank:]\n]+"))
+           (re-or "\\|")
+           (contraction "\\([[:alpha:]]+'[[:alpha:]]+\\)")
+           (plain-word "\\([[:alpha:]]+\\)")
+           (number "\\([[:digit:]]+\\)")
+           (valid-word-regexp (concat contraction
+                                      re-or
+                                      plain-word
+                                      re-or
+                                      number)))
+      (cond ((seq-empty-p sentence) '())
+            (t (seq-filter
+                #'(lambda (str) (string-match-p valid-word-regexp str))
+                (mapcar
+                 #'downcase
+                 (mapcar
+                  #'(lambda (raw-word)
+                      (replace-regexp-in-string
+                       (concat
+                        ".*??\\(" valid-word-regexp "\\).*")
+                       "\\1" raw-word))
+                  raw-words)))))))
+#+end_src

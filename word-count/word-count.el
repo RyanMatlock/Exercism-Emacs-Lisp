@@ -3,13 +3,28 @@
 ;;; Commentary:
 
 (defun sentence-to-words (sentence)
-  (let ((raw-words (split-string sentence "[[:blank:]\n]+"))
-        (invalid-char-regexp "[^'[:alnum:]]\\|^'\\|'$"))
-    (mapcar #'downcase
-            (mapcar #'(lambda (rw)
-                        ;; doing this all in one go doesn't handle edge cases
-                        (replace-regexp-in-string invalid-char-regexp "" rw))
-                    raw-words))))
+  (let* ((raw-words (split-string sentence "[[:blank:]\n]+"))
+         (re-or "\\|")
+         (contraction "\\([[:alpha:]]+'[[:alpha:]]+\\)")
+         (plain-word "\\([[:alpha:]]+\\)")
+         (number "\\([[:digit:]]+\\)")
+         (valid-word-regexp (concat contraction
+                                    re-or
+                                    plain-word
+                                    re-or
+                                    number)))
+    (cond ((seq-empty-p sentence) '())
+          (t (seq-filter
+              #'(lambda (str) (string-match-p valid-word-regexp str))
+              (mapcar
+               #'downcase
+               (mapcar
+                #'(lambda (raw-word)
+                    (replace-regexp-in-string
+                     (concat
+                      ".*??\\(" valid-word-regexp "\\).*")
+                     "\\1" raw-word))
+                raw-words)))))))
 
 (defun count-element (elem list)
   "Count number of times ELEM appears in LIST."
@@ -21,6 +36,7 @@
 (defun count-elements (list)
   "Count elements in LIST and return as an alist, e.g.
 '((ELEM-1 . P) (ELEM-2 . Q) ... (ELEM-N . R))."
+
   (defun ce-helper (xs acc)
     (let ((x (car-safe xs))
           (rest (cdr-safe xs))
@@ -29,7 +45,9 @@
              (ce-helper rest (cons (cons x (count-element x xs)) acc)))
             (x (ce-helper rest acc))
             (t (reverse acc)))))
-  (ce-helper list '()))
+
+  (cond ((seq-empty-p list) '())
+        (t (ce-helper list '()))))
 
 (defun word-count (sentence)
   "Count the number of words in string SENTENCE and return results an an
@@ -39,9 +57,9 @@ apostrophe), and the count is case insensitive."
          (elements-alist (count-elements words)))
     ;; formatted string instead of alist
     ;; (mapconcat #'(lambda (ccell)
-    ;;                (let ((word (car ccell))
+    ;;                (let ((plain-word (car ccell))
     ;;                      (count (cdr ccell)))
-    ;;                  (format "%s: %d" word count)))
+    ;;                  (format "%s: %d" plain-word count)))
     ;;            elements-alist
     ;;            "\n")
     elements-alist))

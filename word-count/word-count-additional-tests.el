@@ -13,6 +13,10 @@
   (should (equal '("hello" "down" "there")
                  (sentence-to-words "Hello\ndown there!!"))))
 
+(ert-deftest sentence-to-words-punctuation-separated-from-words ()
+  (should (equal '("term" "definition")
+                 (sentence-to-words "〈term〉 :: 〈definition〉"))))
+
 (ert-deftest sentence-to-words-pathological-case ()
   (let ((pathological-sentence
          (concat "\"That's the password: 'PASSWORD 123'!\", cried the Special "
