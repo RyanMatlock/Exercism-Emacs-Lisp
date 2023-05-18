@@ -1,13 +1,17 @@
 ;;; roman-numerals.el --- roman-numerals Exercise (exercism)  -*- lexical-binding: t; -*-
 
-;;; Commentary: Idea: turn a number into an alist broken down as
-;;; ((roman-order-of-magnitude . multiple) ...) in descending order and then
-;;; pass that into a function to format it. "Multiple" is maybe an unfortunate
-;;; choice of names, but it speaks to the idea that for the number 3, the
-;;; "Roman order of magnitude" is 'I', which is repeated (i.e. multiplied if
-;;; you're thinking like a Pythonista) 3 times, in other words, 'III'. (I
-;;; suspect this is the sort of thing that won't even make sense to me in a
-;;; matter of weeks or months.)
+;;; Commentary:
+
+(defun num-to-alist (num)
+  "Convert NUM to an alist of the form ((digit . order-of-magnitude) ...)."
+  (let* ((num-string (format "%d" num))
+         (size (length num-string))
+         (powers (number-sequence (1- size) 0 -1)))
+    (seq-mapn #'(lambda (digit power)
+                  (cons (- digit ?0)
+                        (expt 10 power)))
+              num-string
+              powers)))
 
 (defun to-roman (value)
   (let* ((roman-numeral-alist '((0 . "")
@@ -54,7 +58,7 @@ should return element if element is in list."
             (nth (1- pos) roman-base-values)
           nil)))
     (defun next-roman-oom (roman-oom)
-            (let ((pos (position-in-list roman-oom roman-base-values)))
+      (let ((pos (position-in-list roman-oom roman-base-values)))
         (if (and pos (< pos (length roman-base-values)))
             (nth (1+ pos) roman-base-values)
           nil)))
@@ -128,42 +132,42 @@ the form (OOM . multiple)"
                    (cons oom-mult-entry oom-mult-alist))))
             (reverse oom-mult-alist)))
         (roman-oom-mult-helper n '())))
-  (defun roman-numeral-alist-formatter (oom-mult-alist)
-    "Converts a number like alist ((roman-oom . multiple) ...) into a Roman
+    (defun roman-numeral-alist-formatter (oom-mult-alist)
+      "Converts a number like alist ((roman-oom . multiple) ...) into a Roman
 numeral. e.g.
 ((10 . 4)
  (5 . 3)) -> 'XLVIII'."
-    (defun oom-mult-to-numeral-string (oom-mult-alist-elem)
-      (let ((oom (car oom-mult-alist-elem))
-            (mult (cdr oom-mult-alist-elem)))
-        (cond ((eq 4 mult) (concat (alist-get oom roman-numeral-alist)
-                                   (alist-get (next-roman-oom oom)
-                                              roman-numeral-alist)))
-              ;; the difference between 4 and 9 is that with 9 I'm going up by
-              ;; 2 Roman orders of magnitude
-              ((eq 9 mult) (concat (alist-get oom roman-numeral-alist)
-                                   (alist-get (next-roman-oom
-                                               (next-roman-oom oom))
-                                              roman-numeral-alist)))
-              ;; works for mult = 0, 1, 2, 3 (although 0 shouldn't come up)
-              ;; (this is the clever step -- assuming there is such a thing in
-              ;; this monstrosity)
-              (t (repeat-string (alist-get oom roman-numeral-alist) mult)))))
-    (defun rn-formatter-helper (oom-mult-alist accumulator)
-      (let ((oom-mult-elem (car oom-mult-alist)))
-        (if oom-mult-elem
-            (rn-formatter-helper
-             (cdr oom-mult-alist)
-             (cons (oom-mult-to-numeral-string oom-mult-elem) accumulator))
-          (mapconcat #'identity (reverse accumulator) ""))))
-    (rn-formatter-helper oom-mult-alist '()))
-  (let ((simple (simple-roman-lookup value)))
-    ;; start using this pattern instead of
-    ;; (if foo
-    ;;     foo
-    ;;   else-action)
-    (or simple
-        (roman-numeral-alist-formatter (roman-oom-and-multiple-alist value))))))
+      (defun oom-mult-to-numeral-string (oom-mult-alist-elem)
+        (let ((oom (car oom-mult-alist-elem))
+              (mult (cdr oom-mult-alist-elem)))
+          (cond ((eq 4 mult) (concat (alist-get oom roman-numeral-alist)
+                                     (alist-get (next-roman-oom oom)
+                                                roman-numeral-alist)))
+                ;; the difference between 4 and 9 is that with 9 I'm going up by
+                ;; 2 Roman orders of magnitude
+                ((eq 9 mult) (concat (alist-get oom roman-numeral-alist)
+                                     (alist-get (next-roman-oom
+                                                 (next-roman-oom oom))
+                                                roman-numeral-alist)))
+                ;; works for mult = 0, 1, 2, 3 (although 0 shouldn't come up)
+                ;; (this is the clever step -- assuming there is such a thing in
+                ;; this monstrosity)
+                (t (repeat-string (alist-get oom roman-numeral-alist) mult)))))
+      (defun rn-formatter-helper (oom-mult-alist accumulator)
+        (let ((oom-mult-elem (car oom-mult-alist)))
+          (if oom-mult-elem
+              (rn-formatter-helper
+               (cdr oom-mult-alist)
+               (cons (oom-mult-to-numeral-string oom-mult-elem) accumulator))
+            (mapconcat #'identity (reverse accumulator) ""))))
+      (rn-formatter-helper oom-mult-alist '()))
+    (let ((simple (simple-roman-lookup value)))
+      ;; start using this pattern instead of
+      ;; (if foo
+      ;;     foo
+      ;;   else-action)
+      (or simple
+          (roman-numeral-alist-formatter (roman-oom-and-multiple-alist value))))))
 
 (provide 'roman-numerals)
 ;;; roman-numerals.el ends here
