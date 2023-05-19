@@ -24,7 +24,8 @@
                                (100 . ?C)
                                (500 . ?D)
                                (1000 . ?M))))
-    (cond ((member digit '(0 1 2 3 5 6 7 8))
+    (cond ((member digit (append (number-sequence 0 3)
+                                 (number-sequence 5 8)))
            (let ((fivep (not (zerop (/ digit 5)))) ;; t for 5 6 7 8
                  (rest (mod digit 5)))
              (concat
@@ -34,13 +35,14 @@
               ;; this processing is the same for all numbers, which is why I
               ;; have  the conditional inside of here: to keep things DRY
               (make-string rest (alist-get oom roman-numeral-alist)))))
-          ((= digit 4) (format "%c%c"
-                               (alist-get oom roman-numeral-alist)
-                               (alist-get (* 5 oom) roman-numeral-alist)))
-          ((= digit 9) (format "%c%c"
-                               (alist-get oom roman-numeral-alist)
-                               (alist-get (* 10 oom) roman-numeral-alist)))
-          (t (error "You shouldn't be here")))))
+          (t (let (;; this is super cryptic, but basically, if the digit is 4,
+                   ;; multiply the oom by 5 (i.e. promote it by one Roman order
+                   ;; of magnitude step); otherwise, the digit is 9, so promote
+                   ;; the Roman oom by two steps
+                   (oom-promotion (* oom (if (= digit 4) 5 10))))
+               (format "%c%c"
+                       (alist-get oom roman-numeral-alist)
+                       (alist-get oom-promotion roman-numeral-alist)))))))
 
 (defun to-roman (value)
   (mapconcat #'digit-oom-to-roman (num-to-alist value) ""))
