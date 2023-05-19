@@ -178,7 +178,72 @@ You haven't been following the [[https://www.emacswiki.org/emacs/DocString][Emac
 well, so start doing that.
 
 * TODO Refactoring
+** Empty char issue
+This is tripping me up:
 
+#+begin_src emacs-lisp
+  ELISP> (format "%cfoo" 0)
+  " foo"
+  ELISP> (format "%cfoo" (string-to-char ""))
+  " foo"
+#+end_src
 
+Some ideas:
 
+#+begin_src emacs-lisp
+  ELISP> (string 0)
+  " "
+  ELISP> (make-string 1 0)
+  " "
+  ELISP> (make-string 0 0)
+  ""
+#+end_src
 
+Looks like I'll have to use a second =make-string= for this:
+
+#+begin_src emacs-lisp
+  ((member digit '(0 1 2 3 5 6 7 8))
+             (let ((five (/ digit 5))
+                   (rest (mod digit 5)))
+               (format "%c%s"
+                       (alist-get (* five 5 oom) roman-numeral-alist)
+                       (make-string rest (alist-get oom roman-numeral-alist)))))
+#+end_src
+
+This works, but it's still ugly:
+
+#+begin_src emacs-lisp
+  ((member digit '(0 1 2 3 5 6 7 8))
+             (let ((five (/ digit 5))
+                   (rest (mod digit 5)))
+               (format "%s%s"
+                       (make-string five
+                                    (or (alist-get (* 5 oom) roman-numeral-alist)o
+                                        0))
+                       (make-string rest
+                                    (alist-get oom roman-numeral-alist)))))
+#+end_src
+
+Note that I have the following =let= binding surrounding the previous expression:
+
+#+begin_src emacs-lisp
+  (roman-numeral-alist '((0 . 0)
+                         (1 . ?I)
+                         (5 . ?V)
+                         (10 . ?X)
+                         (50 . ?L)
+                         (100 . ?C)
+                         (500 . ?D)
+                         (1000 . ?M)))
+#+end_src
+
+What if I remove the =(0 . 0)= entry and do an =(or (alist-get ...) 0)= thing?
+
+#+begin_src emacs-lisp
+  ELISP> (string nil)
+  ,*** Eval error ***  Wrong type argument: characterp, nil
+  ELISP> (string "")
+  ,*** Eval error ***  Wrong type argument: characterp, ""
+#+end_src
+
+Oh, that's kind of annoying.
