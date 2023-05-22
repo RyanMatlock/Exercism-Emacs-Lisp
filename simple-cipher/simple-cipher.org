@@ -1,0 +1,17 @@
+#+title: Simple Cipher
+
+* IELM testing
+** Don't rely on =defconst= to save you from stupid mistakes
+
+#+begin_src emacs-lisp
+  (defconst sc--num-letters 26)
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> sc--num-letters
+  26 (#o32, #x1a, ?\C-z)
+  ELISP> (setq sc--num-letters 27)
+  27 (#o33, #x1b, ?\C-\[)
+  ELISP> sc--num-letters
+  27 (#o33, #x1b, ?\C-\[)
+#+end_src
