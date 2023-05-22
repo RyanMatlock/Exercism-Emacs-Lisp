@@ -9,20 +9,20 @@
   "Take modulo 26 of the sum of number SHIFT-KEY (between 0 and 26) and each
 letter char in string TEXT and return the result as a string."
 
-  (defun shift (char shift-key first-letter)
-    (+ (mod (+ (- char first-letter) shift-key) 26)
-       first-letter))
+  (defun shift (char)
+    "If CHAR is a letter, rotate it by the appropriate amount; otherwise,
+return it unchanged."
+    (let* ((uppercase (number-sequence ?A ?Z))
+           (lowercase (number-sequence ?a ?z))
+           (first-letter (cond ((member char uppercase) (car uppercase))
+                               ((member char lowercase) (car lowercase))
+                               (t nil))))
+      (if first-letter
+          (+ (mod (+ (- char first-letter) shift-key) 26)
+             first-letter)
+        char)))
 
-  (let ((uppercase (number-sequence ?A ?Z))
-        (lowercase (number-sequence ?a ?z)))
-    (mapconcat
-     #'string
-     (seq-map #'(lambda (c)
-                  (cond ((member c uppercase) (shift c shift-key ?A))
-                        ((member c lowercase) (shift c shift-key ?a))
-                        (t c)))
-              text)
-     "")))
+  (mapconcat #'string (seq-map #'shift text) ""))
 
 
 (provide 'rotational-cipher)
