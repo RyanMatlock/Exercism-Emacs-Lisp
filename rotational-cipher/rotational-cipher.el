@@ -14,11 +14,12 @@ letter char in string TEXT and return the result as a string."
 return it unchanged."
     (let* ((uppercase (number-sequence ?A ?Z))
            (lowercase (number-sequence ?a ?z))
+           (num-letters (length uppercase))
            (first-letter (cond ((member char uppercase) (car uppercase))
                                ((member char lowercase) (car lowercase))
                                (t nil))))
       (if first-letter
-          (+ (mod (+ (- char first-letter) shift-key) 26)
+          (+ (mod (+ (- char first-letter) shift-key) num-letters)
              first-letter)
         char)))
 
