@@ -1,0 +1,65 @@
+#+title: Matching Brackets
+
+* Ideas
+To simplify things, I should operate on strings containing only brackets.
+
+#+begin_src emacs-lisp
+  ELISP> (replace-regexp-in-string "[^(){}[]]+" "" "\\left(\\begin{array}{cc} \\frac{1}{3} & x\\\\ \\mathrm{e}^{x} &... x^2 \\end{array}\\right)")
+  "\\left(\\begin{array}{cc} \\frac{1}{3} & x\\\\ \\mathrm{e}^{x} &... x^2 \\end{array}\\right)"
+  ELISP> (replace-regexp-in-string "[^(){}\[\]]+" "" "\\left(\\begin{array}{cc} \\frac{1}{3} & x\\\\ \\mathrm{e}^{x} &... x^2 \\end{array}\\right)")
+  "\\left(\\begin{array}{cc} \\frac{1}{3} & x\\\\ \\mathrm{e}^{x} &... x^2 \\end{array}\\right)"
+  ELISP> (replace-regexp-in-string "[^()]+" "" "(foobar)")
+  "()"
+  ELISP> (replace-regexp-in-string "[^()]+" "" "(foo)(bar)")
+  "()()"
+  ELISP> (replace-regexp-in-string "[^(){}]+" "" "(foo){bar}")
+  "(){}"
+  ELISP> (replace-regexp-in-string "[^(){}[]]+" "" "(foo){bar}[baz]")
+  "(foo){bar}[ba"
+  ELISP> (replace-regexp-in-string "[^(){}\[\]]+" "" "(foo){bar}[baz]")
+  "(foo){bar}[ba"
+  ELISP> (replace-regexp-in-string "[^(){}\\[\\]]+" "" "(foo){bar}[baz]")
+  "(foo){bar}[ba"
+  ELISP> (replace-regexp-in-string "[^(){}[[]]]+" "" "(foo){bar}[baz]")
+  "(foo){bar}[baz]"
+  ELISP> (replace-regexp-in-string "[^][(){}]+" "" "(foo){bar}[baz]")
+  "(){}[]"
+#+end_src
+
+=^= and =]= have to come at the beginning of "character alternatives." See [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Regexp-Special.html#index-character-alternative-_0028in-regexp_0029][Special
+Characters in Regular Expressions § =‘[ … ]’= | GNU Emacs Lisp Manual]].
+
+From here, one way to solve it would be to create a stack, but I think the
+easiest thing to do would be to recursively remove adjacent matched brackets
+(e.g. ="({})"= \to ="()"= \to =""= or ="[{()}"= \to ="[{}"= \to ="["= in the case of an
+unmatched bracket).
+
+Almost have it:
+
+#+begin_src emacs-lisp
+  (defun is-paired (value)
+    "Return T if string VALUE contains paired brackets (i.e. (), [], and {},
+  which may be nested); otherwise return NIL."
+    (let* ((only-brackets
+            (replace-regexp-in-string "[^][(){}]+" "" value))
+           (regexp-or "\\|")
+           (matched-pairs-removed
+            (replace-regexp-in-string (concat "\\(\\{\\}\\)"
+                                              regexp-or
+                                              "\\(\\[\\]\\)"
+                                              regexp-or
+                                              "\\(()\\)+")
+                                      "" only-brackets)))
+      (or (string= "" matched-pairs-removed)
+          (not (string= only-brackets matched-pairs-removed))
+          (is-paired matched-pairs-removed)))
+#+end_src
+
+The issue is that I need to return =nil= as soon as
+
+#+begin_src emacs-lisp
+  (string= only-brackets matched-pairs-removed)
+#+end_src
+
+which I don't think I can do with =or= alone; I think I need to use =cond= in order
+to get the two base cases of the recursion.
