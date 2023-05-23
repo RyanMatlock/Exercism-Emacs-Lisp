@@ -32,7 +32,7 @@ e.g. \"abcd\" => '(0 1 2 3)"
   "Apply rotational cipher to string TEXT using the values in list of numbers
 ROTATIONS."
   (unless (= (length text) (length rotations))
-    (error "XS and ROTATIONS must be the same length."))
+    (error "TEXT and ROTATIONS must be the same length."))
   (let ((xs (sc--string-to-alpha-indices text))
         (period sc--num-letters))
     (sc--alpha-indices-to-string
