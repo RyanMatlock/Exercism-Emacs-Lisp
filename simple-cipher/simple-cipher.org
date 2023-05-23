@@ -127,3 +127,8 @@ can have the =decode= function operate on =key= to form its decoding complement.
 This works, but there's further refactoring that can be done. The only
 difference between =encode= and =decode= is the transformation performed on
 =decode-rots=.
+
+The common =encode/decode= function needs to
+1. convert text to alphabetical indices;
+2. call =sc--rotate= on the converted text and supplied rotations; and
+3. apply =sc--alpha-indices-to-string= on the rotated indices.

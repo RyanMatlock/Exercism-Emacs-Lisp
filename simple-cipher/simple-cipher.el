@@ -8,11 +8,6 @@
 (defconst sc--num-letters 26)
 (defconst sc--min-random-key-length 100)
 
-(defun sc--rotate (xs rotations period)
-  (unless (= (length xs) (length rotations))
-    (error "XS and ROTATIONS must be the same length."))
-  (seq-mapn #'(lambda (x rot) (mod (+ x rot) period)) xs rotations))
-
 (defun sc--repeat-or-trim-key (text key)
   "Return a string the length of string TEXT consisting of as many repeats of
 string KEY as necessary."
@@ -24,27 +19,41 @@ string KEY as necessary."
                 0 text-len)))
 
 (defun sc--string-to-alpha-indices (str)
+  "Convert string STR to a list of alphabetical indices.
+
+e.g. \"abcd\" => '(0 1 2 3)"
   (seq-map #'(lambda (char) (- char ?a)) str))
 
 (defun sc--alpha-indices-to-string (xs)
+  "Convert alphabetical indices XS to a string."
   (mapconcat #'string (mapcar #'(lambda (x) (+ x ?a)) xs) ""))
+
+(defun sc--rotate (text rotations)
+  "Apply rotational cipher to string TEXT using the values in list of numbers
+ROTATIONS."
+  (unless (= (length text) (length rotations))
+    (error "XS and ROTATIONS must be the same length."))
+  (let ((xs (sc--string-to-alpha-indices text))
+        (period sc--num-letters))
+    (sc--alpha-indices-to-string
+     (seq-mapn #'(lambda (x rot) (mod (+ x rot) period)) xs rotations))))
 
 (defun encode (plaintext key)
   "Apply a rotational cipher to lowercase string PLAINTEXT using the characters
 of lowercase string KEY."
   (let* ((key (sc--repeat-or-trim-key plaintext key))
-         (plaintext-xs (sc--string-to-alpha-indices plaintext))
          (encode-rots (sc--string-to-alpha-indices key)))
-    (sc--alpha-indices-to-string
-     (sc--rotate plaintext-xs encode-rots sc--num-letters))))
+    (sc--rotate plaintext encode-rots)))
 
 (defun decode (ciphertext key)
+  "Apply a rotational cipher to lowercase string CIPHERTEXT using the
+characters of lowercase string KEY using KEY's alphabetical complement
+(i.e. for each K in KEY, (= (+ K Q) 26) => t, where Q is the alphabetical
+complement)."
   (let* ((encode-key (sc--repeat-or-trim-key ciphertext key))
          (decode-rots (mapcar #'(lambda (x) (- sc--num-letters x))
-                              (sc--string-to-alpha-indices encode-key)))
-         (cipher-xs (sc--string-to-alpha-indices ciphertext)))
-    (sc--alpha-indices-to-string
-     (sc--rotate cipher-xs decode-rots sc--num-letters))))
+                              (sc--string-to-alpha-indices encode-key))))
+    (sc--rotate ciphertext decode-rots)))
 
 (defun generate-key ()
   "Generate a random lowercase key of length 'sc--min-random-key-length'."
