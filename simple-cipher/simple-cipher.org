@@ -15,3 +15,115 @@
   ELISP> sc--num-letters
   27 (#o33, #x1b, ?\C-\[)
 #+end_src
+
+** Scoping
+
+#+begin_src emacs-lisp
+  ELISP> (let ((x 1))
+           (print ((lambda (y) (while (< y 5)
+                                 (setq y (+ y y)))
+                     y) x))
+           x)
+
+  8
+
+  1 (#o1, #x1, ?\C-a)
+#+end_src
+
+Ok, I don't have to worry about =setq= modifying anything outside of the scope of
+a function, which is what I expected.
+
+* Passing ~encode~ tests
+
+#+begin_src emacs-lisp
+  (defconst sc--num-letters 26)
+  (defconst sc--min-random-key-length 100)
+
+  (defun text-key-alist (text key)
+    "Create an alist of characters from the strings TEXT and KEY ((T1 . K1) ...),
+  repeating KEY as needed to equal the length of TEXT."
+    (let* ((text-len (length text))
+           (trimmed-key
+            (seq-subseq (progn (while (< (length key) text-len)
+                                 (setq key (concat key key)))
+                               key)
+                        0 text-len)))
+      (seq-mapn #'(lambda (text key) (cons text key)) text key)))
+
+  (defun encode (plaintext key)
+    "Apply a rotational cipher to lowercase string PLAINTEXT using the characters
+  of lowercase string KEY."
+    (let ((char-offset ?a)
+          (tk-alist (text-key-alist plaintext key)))
+      (mapconcat #'string
+                 (mapcar
+                  #'(lambda (tk-cons-cell)
+                      (let ((char (- (car tk-cons-cell) char-offset))
+                            (rotation (- (cdr tk-cons-cell) char-offset)))
+                        (+ (mod (+ char rotation) sc--num-letters)
+                           char-offset)))
+                  tk-alist)
+                 "")))
+#+end_src
+
+I should refactor this though. It's better to write a function that gives me
+the proper length key and another function that performs a rotation. That way I
+can have the =decode= function operate on =key= to form its decoding complement.
+
+* Passing all tests
+
+#+begin_src emacs-lisp
+  (defconst sc--num-letters 26)
+  (defconst sc--min-random-key-length 100)
+
+  (defun sc--rotate (xs rotations period)
+    (unless (= (length xs) (length rotations))
+      (error "XS and ROTATIONS must be the same length."))
+    (seq-mapn #'(lambda (x rot) (mod (+ x rot) period)) xs rotations))
+
+  (defun sc--repeat-or-trim-key (text key)
+    "Return a string the length of string TEXT consisting of as many repeats of
+  string KEY as necessary."
+    (let* ((text-len (length text)))
+      (seq-subseq (progn
+                    (while (< (length key) text-len)
+                      (setq key (concat key key)))
+                    key)
+                  0 text-len)))
+
+  (defun sc--string-to-alpha-indices (str)
+    (seq-map #'(lambda (char) (- char ?a)) str))
+
+  (defun sc--alpha-indices-to-string (xs)
+    (mapconcat #'string (mapcar #'(lambda (x) (+ x ?a)) xs) ""))
+
+  (defun encode (plaintext key)
+    "Apply a rotational cipher to lowercase string PLAINTEXT using the characters
+  of lowercase string KEY."
+    (let* ((key (sc--repeat-or-trim-key plaintext key))
+           (plaintext-xs (sc--string-to-alpha-indices plaintext))
+           (encode-rots (sc--string-to-alpha-indices key)))
+      (sc--alpha-indices-to-string
+       (sc--rotate plaintext-xs encode-rots sc--num-letters))))
+
+  (defun decode (ciphertext key)
+    (let* ((encode-key (sc--repeat-or-trim-key ciphertext key))
+           (decode-rots (mapcar #'(lambda (x) (- sc--num-letters x))
+                                (sc--string-to-alpha-indices encode-key)))
+           (cipher-xs (sc--string-to-alpha-indices ciphertext)))
+      (sc--alpha-indices-to-string
+       (sc--rotate cipher-xs decode-rots sc--num-letters))))
+
+  (defun generate-key ()
+    "Generate a random lowercase key of length 'sc--min-random-key-length'."
+    (let ((key (make-string sc--min-random-key-length ?a)))
+      ;; random returns an integer in the range [0, limit), so ?a + 0 = ?a and
+      ;; ?a + (1- 26) = ?z, so all letters are possible
+      (mapconcat #'string
+                 (seq-map #'(lambda (c) (+ c (random sc--num-letters))) key)
+                 "")))
+#+end_src
+
+This works, but there's further refactoring that can be done. The only
+difference between =encode= and =decode= is the transformation performed on
+=decode-rots=.
