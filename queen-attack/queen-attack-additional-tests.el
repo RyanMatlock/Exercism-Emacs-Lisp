@@ -20,6 +20,20 @@
 (ert-deftest grid-to-position-exercism-example-black-queen-f2 ()
   (should (equal '(5 . 6) (grid-to-position "f2"))))
 
+(declare-function qa--diagonalp "queen-attack.el" (pos1 pos2))
+
+(ert-deftest diagonalp-a1-h8 ()
+  (should (qa--diagonalp (grid-to-position "a1")
+                         (grid-to-position "h8"))))
+
+(ert-deftest diagonalp-adjacent ()
+  (should (qa--diagonalp (grid-to-position "F3")
+                         (grid-to-position "G2"))))
+
+(ert-deftest diagonalp-one-more-to-check ()
+    (should (qa--diagonalp (grid-to-position "e8")
+                           (grid-to-position "h5"))))
+
 (declare-function can-attack-p "queen-attack.el"
                   (white-queen black-queen))
 
