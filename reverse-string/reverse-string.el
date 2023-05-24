@@ -6,8 +6,14 @@
 
 
 (defun reverse-string (value)
-  (error
-   "Delete this S-Expression and write your own implementation"))
+  "Reverse string VALUE without using the built-in `reverse' function."
+
+  (defun reverse-helper (char-list acc)
+    (if char-list
+        (reverse-helper (cdr char-list) (cons (car char-list) acc))
+      (mapconcat #'string acc "")))
+
+  (reverse-helper (seq-map #'identity value) '()))
 
 
 (provide 'reverse-string)
