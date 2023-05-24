@@ -17,6 +17,7 @@
     (cond ((= len 0) nil)
           ((evenp len) (1- (/ len 2))) ;; 1- is the result of 0-indexing
           ((oddp len) (/ len 2))
+          ;; too many Arrested Development clips this morning
           (t (error "I've made a terrible mistake.")))))
 
 (defun bs--array-bisect (arr)
@@ -26,10 +27,11 @@
     (cond ((= length-arr 0) nil)
           ((= length-arr 1) (cons arr nil))
           (t (let ((middle-index (bs--middle-index arr)))
-               ;; 1+ is due to the END argument of seq-subseq being exclusive
-               (cons (seq-subseq arr 0 (1+ middle-index))
-                     ;; 1+ is there to not doubly include the middle
-                     (seq-subseq arr (1+ middle-index))))))))
+               (cons
+                ;; 1+ is due to exclusivity of seq-subseq's END argument
+                (seq-subseq arr 0 (1+ middle-index))
+                ;; 1+ is there to not include middle element twice
+                (seq-subseq arr (1+ middle-index))))))))
 
 (defun find-binary (array value)
 
@@ -37,24 +39,23 @@
     (let ((larr (length arr)))
       (cond
        ((> larr 1)
-        (let* ((middle-elt (elt arr (/ larr 2)))
+        (let* ((middle-elt (elt arr (bs--middle-index arr)))
                (bisection (bs--array-bisect arr))
                (left (car-safe bisection))
                (right (cdr-safe bisection)))
           (print (format (concat "arr: %s, val: %d\n"
                                  "middle-elt: %d\n"
-                                 "smaller: %s\n"
-                                 "larger: %s")
-                         arr val middle-elt smaller larger))
-          (if (>= val middle-elt)
-              (bs--safe-1+ (fb-helper larger val))
-            (bs--safe-1+ (fb-helper smaller val)))))
+                                 "left: %s\n"
+                                 "right: %s")
+                         arr val middle-elt left right))
+          (cond ((= val middle-elt) 0)
+                ((< val middle-elt) (bs--safe-1+ (fb-helper left val)))
+                (t (bs--safe-1+ (fb-helper right val))))))
        ((= larr 1)
         (when (equal (elt arr 0) val) 0))
        (t nil))))
 
-  (let ((array (sort array '<)))
-    (fb-helper array value)))
+  (fb-helper array value))
 
 
 (provide 'binary-search)
