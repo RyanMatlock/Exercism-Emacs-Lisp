@@ -1,0 +1,25 @@
+#+startup: latexpreview
+#+title: Queen Attack
+
+* ~queen-attack-extra.el~
+It was actually useful to have a helper function to convert normal chess grid
+notation to the cons cell used in the problem because once it was tested and
+working, I didn't have to think about it.
+
+* =betweenp= not necessary
+After submitting my solution, I checked out one of the community solutions and
+discovered that
+
+#+begin_src emacs-lisp
+  (<= a x b)
+#+end_src
+
+will return =t= for \( x \in [a,b] \), which is really cool, so
+
+#+begin_src emacs-lisp
+  (defun betweenp (n lower upper)
+    (and (<= lower n)
+         (<= n upper)))
+#+end_src
+
+is neither concise nor idiomatic.
