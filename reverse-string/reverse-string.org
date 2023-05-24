@@ -1,0 +1,15 @@
+#+title: Reverse String
+
+* An even better way to do it
+After submitting, I checked the community solutions and saw that you can use
+[[https://www.gnu.org/software/emacs/manual/html_node/elisp/Sequence-Functions.html#index-seq_002dreduce][=seq-reduce= | Sequences | GNU Emacs Lisp Manual]] to do this in a sexier way:
+
+#+begin_src emacs-lisp
+  (seq-reduce #'(lambda (acc char) (concat (string char) acc)) "foobar" "")
+  ;; => "raboof"
+#+end_src
+
+*Potential gotcha:* the function =seq-reduce= accept expects the accumulator to be
+the first argument.
+
+
