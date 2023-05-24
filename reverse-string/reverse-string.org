@@ -2,7 +2,11 @@
 
 * An even better way to do it
 After submitting, I checked the community solutions and saw that you can use
+<<<<<<< HEAD
 [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Sequence-Functions.html#index-seq_002dreduce][​=seq-reduce= | Sequences | GNU Emacs Lisp Manual]] to do this in a sexier way:
+=======
+[[https://www.gnu.org/software/emacs/manual/html_node/elisp/Sequence-Functions.html#index-seq_002dreduce][seq-reduce | Sequences | GNU Emacs Lisp Manual]] to do this in a sexier way:
+>>>>>>> reverse-string
 
 #+begin_src emacs-lisp
   (seq-reduce #'(lambda (acc char) (concat (string char) acc)) "foobar" "")
