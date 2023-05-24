@@ -32,8 +32,20 @@ and POS2 are on a diagonal)."
          (abs (- row1 row2)))))
 
 (defun can-attack-p (white-queen black-queen)
-  (error
-   "Delete this S-Expression and write your own implementation"))
+  (unless (and (valid-position-p white-queen)
+               (valid-position-p black-queen))
+    (error "Queens must have valid positions."))
+
+  (let ((wcol (car white-queen))
+        (wrow (cdr white-queen))
+        (bcol (car black-queen))
+        (brow (cdr black-queen)))
+    (and (not (and (= wcol bcol)
+                   (= wrow brow)))           ;; cannot attack own position
+         (or (= wcol bcol)                   ;; can attack same column
+             (= wrow brow)                   ;; can attack same row
+             (qa--diagonalp white-queen      ;; can attack same diagonal
+                            black-queen)))))
 
 
 (provide 'queen-attack)

@@ -1,5 +1,6 @@
 ;;; queen-attack-extra.el --- Queen Attack (exercism)  -*- lexical-binding: t; -*-
 
+;; this makes testing so much easier
 (defun grid-to-position (grid-coordinate)
   "Convert a standard chess GRID-COORDINATE e.g. \"E5\" to a position cons cell
 e.g. (4 . 3)."
