@@ -5,6 +5,11 @@
 ;;; Code:
 
 
+(defun bs--safe-1+ (value)
+  "If VALUE is a number, add 1 to VALUE; otherwise, return nil."
+  (when (numberp value)
+      (1+ value)))
+
 (defun find-binary (array value)
   (error
    "Delete this S-Expression and write your own implementation"))
