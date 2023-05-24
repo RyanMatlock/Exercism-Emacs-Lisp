@@ -5,3 +5,6 @@
 *.pdf
 *.html
 */auto/*
+
+# LaTeX previews
+*.png
