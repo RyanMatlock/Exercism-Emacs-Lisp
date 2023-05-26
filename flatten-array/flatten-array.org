@@ -199,3 +199,119 @@ isn't important because I can always take the flattened list an apply
   (seq-filter #'(lambda (x) (not (null x))) flattened-list)
 #+end_src
 
+Or
+
+#+begin_src emacs-lisp
+  ELISP> (seq-filter #'identity '(t nil 20 :foo nil))
+  (t 20 :foo)
+#+end_src
+
+~identity~ instead of ~(lambda (x) (not (null x)))~ because you understand the
+language :facepalm:
+
+I have an idea:
+
+#+begin_src emacs-lisp
+  ((listp x) (append (lf-helper x '()) (lf-helper xs acc)))
+#+end_src
+
+wait, no, ~x~ has to be processed before ~xs~, so...
+
+#+begin_src emacs-lisp
+  ((listp x) (append (lf-helper xs '()) (lf-helper x acc)))
+#+end_src
+
+That seems better, but let's try it out. Nope.
+
+Current state:
+
+#+begin_src emacs-lisp
+  (defun list-flatten (list)
+
+    ;; (defun lf-helper (list acc)
+    ;;   (let ((x (car-safe list))
+    ;;         (xs (cdr-safe list)))
+    ;;     (print (format (concat "list: %s\n"
+    ;;                            "acc: %s")
+    ;;                    list acc))
+    ;;     (cond ((and (null x) (null xs)) (reverse acc))
+    ;;           ((and x (atom x)) (lf-helper xs (cons x acc)))
+    ;;           ((null x) (lf-helper xs acc))
+    ;;           ((listp x) (lf-helper xs (append (lf-helper x '()) acc))))))
+
+    (defun lf-helper (list acc)
+      (let ((x (car-safe list))
+            (xs (cdr-safe list)))
+
+        (defun debug-state (state-name)
+          (print (format (concat "\t\t--- %s ---\n"
+                                 "x: %s\t\t\t\t"
+                                 "xs: %s\n"
+                                 "list: %s\t\t\t"
+                                 "acc: %s")
+                         state-name x xs list acc)))
+
+        (cond ((and (null x) (null xs))
+               (debug-state "base case")
+               (reverse acc))
+              ((atom x)
+               (debug-state "(atom x)")
+               (lf-helper xs (cons x acc)))
+              ((listp x)
+               (debug-state "(listp x)")
+               (append (lf-helper xs '()) (lf-helper x acc))))))
+
+    (seq-filter #'identity (lf-helper list '())))
+#+end_src
+
+But what if...
+
+#+begin_src emacs-lisp
+  ((listp x)
+   (debug-state "(listp x)")
+   (append (lf-helper x acc) (lf-helper xs '())))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (list-flatten '(1 ((2) 3)))
+  ⋮
+  (1 2 3)
+#+end_src
+
+That's promising!
+
+#+begin_src emacs-lisp
+  ELISP> (list-flatten '(((1 nil 2) (3 ((4 nil) 5) 6))))
+  ⋮
+  (1 2 3 4 5 6)
+#+end_src
+
+That's /very/ promising! Ok, I'm passing all the tests. Here's the current form:
+
+#+begin_src emacs-lisp
+  (defun list-flatten (list)
+
+    (defun lf-helper (list acc)
+      (let ((x (car-safe list))
+            (xs (cdr-safe list)))
+
+        (defun debug-state (state-name)
+          (print (format (concat "\t\t--- %s ---\n"
+                                 "x: %s\t\t\t\t"
+                                 "xs: %s\n"
+                                 "list: %s\t\t\t"
+                                 "acc: %s")
+                         state-name x xs list acc)))
+
+        (cond ((and (null x) (null xs))
+               (debug-state "base case")
+               (reverse acc))
+              ((atom x)
+               (debug-state "(atom x)")
+               (lf-helper xs (cons x acc)))
+              ((listp x)
+               (debug-state "(listp x)")
+               (append (lf-helper x acc) (lf-helper xs '()))))))
+
+    (seq-filter #'identity (lf-helper list '())))
+#+end_src
