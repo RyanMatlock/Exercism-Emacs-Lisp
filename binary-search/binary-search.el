@@ -72,15 +72,18 @@
           (middle-index (bs--middle-index arr)))
       (cond ((= larr 0) nil)
             ((= larr 1) (when (= val (elt arr 0)) abs-index))
-            (t (let* ((middle-elt (elt arr middle-index))
-                      (split (bs--split-array arr))
-                      (left (car-safe split))
-                      (right (cdr-safe split)))
-                 (cond ((= val middle-elt) (+ abs-index middle-index))
-                       ((< val middle-elt)
-                        (fb-helper left val (1+ (- abs-index middle-index))))
-                       (t (fb-helper right val (1+ (+ abs-index
-                                                      middle-index))))))))))
+            (t
+             ;; recall that `when' returns nil when COND is nil
+             (let* ((middle-elt (when middle-index (elt arr middle-index)))
+                    (split (when arr (bs--split-array arr)))
+                    (left (car-safe split))
+                    (right (cdr-safe split)))
+               (cond ((null middle-elt) nil)
+                     ((= val middle-elt) (+ abs-index middle-index))
+                     ((< val middle-elt)
+                      (fb-helper left val (1+ (- abs-index middle-index))))
+                     (t (fb-helper right val (1+ (+ abs-index
+                                                    middle-index))))))))))
 
   (fb-helper array value 0))
 
