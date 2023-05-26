@@ -315,3 +315,18 @@ That's /very/ promising! Ok, I'm passing all the tests. Here's the current form:
 
     (seq-filter #'identity (lf-helper list '())))
 #+end_src
+
+This also passes:
+
+#+begin_src emacs-lisp
+  (defun list-flatten (list)
+
+    (defun lf-helper (list acc)
+      (let ((x (car-safe list))
+            (xs (cdr-safe list)))
+        (cond ((and (null x) (null xs)) (reverse acc)) ;; base case
+              ((atom x) (lf-helper xs (if x (cons x acc) acc))) ;; cons non-nil x
+              ((listp x) (append (lf-helper x acc) (lf-helper xs '()))))))
+
+    (lf-helper list '()))
+#+end_src

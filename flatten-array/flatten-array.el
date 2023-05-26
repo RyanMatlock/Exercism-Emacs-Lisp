@@ -6,41 +6,16 @@
 
 
 (defun list-flatten (list)
-
-  ;; (defun lf-helper (list acc)
-  ;;   (let ((x (car-safe list))
-  ;;         (xs (cdr-safe list)))
-  ;;     (print (format (concat "list: %s\n"
-  ;;                            "acc: %s")
-  ;;                    list acc))
-  ;;     (cond ((and (null x) (null xs)) (reverse acc))
-  ;;           ((and x (atom x)) (lf-helper xs (cons x acc)))
-  ;;           ((null x) (lf-helper xs acc))
-  ;;           ((listp x) (lf-helper xs (append (lf-helper x '()) acc))))))
+  "Unpack nesting from LIST and filter out all nil elements."
 
   (defun lf-helper (list acc)
     (let ((x (car-safe list))
           (xs (cdr-safe list)))
+      (cond ((and (null x) (null xs)) (reverse acc))          ;; base case
+            ((atom x) (lf-helper xs (if x (cons x acc) acc))) ;; cons non-nil x
+            ((listp x) (append (lf-helper x acc) (lf-helper xs '()))))))
 
-      (defun debug-state (state-name)
-        (print (format (concat "\t\t--- %s ---\n"
-                               "x: %s\t\t\t\t"
-                               "xs: %s\n"
-                               "list: %s\t\t\t"
-                               "acc: %s")
-                       state-name x xs list acc)))
-
-      (cond ((and (null x) (null xs))
-             (debug-state "base case")
-             (reverse acc))
-            ((atom x)
-             (debug-state "(atom x)")
-             (lf-helper xs (cons x acc)))
-            ((listp x)
-             (debug-state "(listp x)")
-             (append (lf-helper x acc) (lf-helper xs '()))))))
-
-  (seq-filter #'identity (lf-helper list '())))
+  (lf-helper list '()))
 
 
 (provide 'flatten-array)
