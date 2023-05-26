@@ -1,3 +1,4 @@
+
 #+title: Binary Search
 
 * IELM testing
@@ -311,3 +312,9 @@ steps to find =value= in =array=?
 #+end_src
 
 These tests make no sense to me. ¯\_(ツ)_/¯
+
+Wait a minute, yes they do: the return value is the index of the element. You
+are such an idiot :facepalm::facepalm::facepalm:
+
+In that case, I'm going to change ~bs--array-bisect~ to ~bs--split-array~, and I
+can safely get rid of ~bs--safe-1+~.
