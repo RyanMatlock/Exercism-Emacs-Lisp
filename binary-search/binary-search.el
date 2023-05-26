@@ -33,6 +33,18 @@
                 ;; 1+ is there to not include middle element twice
                 (seq-subseq arr (1+ middle-index))))))))
 
+(defun bs--split-array (arr)
+  (unless (arrayp arr)
+    (error "ARR must be an array."))
+  (let ((length-arr (length arr)))
+    (cond ((= length-arr 0) nil)
+          ((= length-arr 1) '(nil . nil)) ;; ≡ '(nil) but this better captures
+                                          ;; its purpose/meaning
+          (t (let ((middle-index (bs--middle-index arr)))
+               ;; exclude middle value from result
+               (cons (seq-subseq arr 0 middle-index)
+                     (seq-subseq arr (1+ middle-index))))))))
+
 (defun find-binary (array value)
 
   (defun fb-helper (arr val)
