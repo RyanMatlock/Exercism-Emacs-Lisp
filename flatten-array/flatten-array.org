@@ -1,0 +1,201 @@
+#+title: Flatten Array
+
+* Debugging
+How it started:
+
+#+begin_src emacs-lisp
+  (defun list-flatten (list)
+
+    (defun lf-helper (list acc)
+      (let ((x (car-safe list))
+            (xs (cdr-safe list)))
+        (print (format (concat "list: %s\n"
+                               "acc: %s")
+                       list acc))
+        (cond ((and (null x) (null xs)) (reverse acc))
+              ((and x (atom x)) (lf-helper xs (cons x acc)))
+              ((null x) (lf-helper xs acc))
+              ((listp x) (lf-helper xs (cons (cons (list-flatten (car-safe x))
+                                                   (list-flatten (cdr-safe x)))
+                                             acc))))))
+
+    (lf-helper list '()))
+#+end_src
+
+How it's going:
+
+#+begin_src emacs-lisp
+  ELISP> (list-flatten '(1 2 3))
+
+  "list: (1 2 3)
+  acc: nil"
+
+  "list: (2 3)
+  acc: (1)"
+
+  "list: (3)
+  acc: (2 1)"
+
+  "list: nil
+  acc: (3 2 1)"
+
+  (1 2 3)
+#+end_src
+
+Ok, at least it can do that, but...
+
+#+begin_src emacs-lisp
+  ELISP> (list-flatten '(1 (2) 3))
+
+  "list: (1 (2) 3)
+  acc: nil"
+
+  "list: ((2) 3)
+  acc: (1)"
+
+  "list: 2
+  acc: nil"
+
+  "list: nil
+  acc: nil"
+
+  "list: (3)
+  acc: ((nil) 1)"
+
+  "list: nil
+  acc: (3 (nil) 1)"
+
+  (1
+   (nil)
+   3)
+#+end_src
+
+That ain't right.
+
+#+begin_src emacs-lisp
+  (defun list-flatten (list)
+
+    (defun lf-helper (list acc)
+      (let ((x (car-safe list))
+            (xs (cdr-safe list)))
+        (print (format (concat "list: %s\n"
+                               "acc: %s")
+                       list acc))
+        (cond ((and (null x) (null xs)) (reverse acc))
+              ((and x (atom x)) (lf-helper xs (cons x acc)))
+              ((null x) (lf-helper xs acc))
+              ((listp x) (lf-helper xs (append (list-flatten x acc)
+                                               acc))))))
+
+    (lf-helper list '()))
+#+end_src
+
+This is looking more like it ought to work, but...
+
+#+begin_src emacs-lisp
+  ELISP> (list-flatten '(1 2 3))
+  ⋮
+  (1 2 3)
+
+  ELISP> (list-flatten '(1 (2) 3))
+
+  "list: (1 (2) 3)
+  acc: nil"
+
+  "list: ((2) 3)
+  acc: (1)"
+
+  ,*** Eval error ***  Wrong number of arguments:
+  ((t) (list) (defalias 'lf-helper #'(lambda (list acc) (let ((x (car-safe list)) (xs (cdr-safe list))) (print (format (concat "list: %s
+  " "acc: %s") list acc)) (cond ((and (null x) (null xs)) (reverse acc)) ((and x (atom x)) (lf-helper xs (cons x acc))) ((null x) (lf-helper xs acc)) ((listp x) (lf-helper xs (append (list-flatten x acc) acc))))))) (lf-helper list 'nil)), 2
+#+end_src
+
+So we're not there yet. Oh wait, I meant to use ~lf-helper~ instead of
+~list-flatten~ :facepalm: Like this:
+
+#+begin_src emacs-lisp
+  ((listp x) (lf-helper xs (append (lf-helper x acc) acc)))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (list-flatten '(1 (2) 3))
+
+  "list: (1 (2) 3)
+  acc: nil"
+
+  "list: ((2) 3)
+  acc: (1)"
+
+  "list: (2)
+  acc: (1)"
+
+  "list: nil
+  acc: (2 1)"
+
+  "list: (3)
+  acc: (1 2 1)"
+
+  "list: nil
+  acc: (3 1 2 1)"
+
+  (1 2 1 3)
+#+end_src
+
+But obviously including ~acc~ in the inner ~lf-helper~ is dumb and you end up with
+this :facepalm:
+
+#+begin_src emacs-lisp
+  ELISP> (list-flatten '(1 (2) 3))
+  ⋮
+  (1 2 3)
+#+end_src
+
+That's promising!
+
+#+begin_src emacs-lisp
+  ((listp x) (lf-helper xs (append (list-flatten x)acc)))
+#+end_src
+
+That also works, but it's probably better to use ~lf-helper~ in terms of not
+exceeding the maximum stack depth.
+
+#+begin_src emacs-lisp
+  ELISP> (list-flatten '(1 ((2) 3)))
+
+  "list: (1 ((2) 3))
+  acc: nil"
+
+  "list: (((2) 3))
+  acc: (1)"
+
+  "list: ((2) 3)
+  acc: nil"
+
+  "list: (2)
+  acc: nil"
+
+  "list: nil
+  acc: (2)"
+
+  "list: (3)
+  acc: (2)"
+
+  "list: nil
+  acc: (3 2)"
+
+  "list: nil
+  acc: (2 3 1)"
+
+  (1 3 2)
+#+end_src
+
+Now that's a bit of a problem.
+
+** Worry about ~nil~? Nah
+Aside: I was thinking that worrying about whether the elements of ~list~ are ~nil~
+isn't important because I can always take the flattened list an apply
+
+#+begin_src emacs-lisp
+  (seq-filter #'(lambda (x) (not (null x))) flattened-list)
+#+end_src
+
