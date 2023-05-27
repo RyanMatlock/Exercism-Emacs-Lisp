@@ -1,0 +1,397 @@
+
+#+title: Binary Search
+
+* IELM testing
+
+#+begin_src emacs-lisp
+  ELISP> (seq-subseq [2 4 6] 0 1)
+  [2]
+
+  ELISP> (seq-subseq [2 4 6] 1)
+  [4 6]
+
+  ELISP> (car [1 2 3])
+  ,*** Eval error ***  Wrong type argument: listp, [1 2 3]
+
+  ELISP> (elt [] 0)
+  ,*** Eval error ***  Args out of range: [], 0
+
+  ELISP> (sort [] '<)
+  []
+
+  ELISP> (when nil 0)
+  nil
+#+end_src
+
+Is there something like =car-safe= for =elt=? No, but I found out about
+[[https://www.gnu.org/software/emacs/manual/html_node/elisp/Sequence-Functions.html#index-seq_002dpartition][seq-partition | Sequences | GNU Emacs Lisp Manual]], which is nice. [Note from
+future self: not in the way you thought it was because you didn't read the
+documentation carefully.]
+
+#+begin_src emacs-lisp
+  ELISP> (seq-partition [1 2 3] 2)
+  ([1 2]
+   [3])
+
+  ELISP> (seq-partition [1 2 3 4] 2)
+  ([1 2]
+   [3 4])
+
+  ELISP> (cadr (seq-partition [1 2 3 4] 2))
+  [3 4]
+
+  ELISP> (let ((arr [1 2 3 4]))
+           (elt arr (/ (length arr) 2)))
+  3 (#o3, #x3, ?\C-c)
+#+end_src
+
+* Buggy garbage
+
+#+begin_src emacs-lisp
+  (defun fb-helper (arr val)
+    (let* ((len-arr (length arr))
+           (middle-index (/ len-arr 2))
+           (middle-elem (elt arr middle-index)))
+      (cond ((= len-arr 0) nil)
+            ((and (= len-arr 1) (equal (elt arr 0) val)) 0)
+            ;; ((= len-arr 1) nil)
+            ((>= val middle-elem)
+             (1+ (fb-helper (seq-subseq arr middle-index) val)))
+            (t (1+ (fb-helper (seq-subseq arr 0 (1+ middle-index)) val))))))
+#+end_src
+
+Let's try this again.
+
+#+begin_src emacs-lisp
+  (defun fb-helper (arr val)
+    (let ((larr (length arr)))
+      (cond
+       ((> larr 1)
+        (let* ((middle-elt (elt arr (/ larr 2)))
+               (partition (seq-partition arr 2))
+               (smaller (car partition))
+               (larger (cadr partition)))
+          (print (format (concat "arr: %s, val: %d\n"
+                                 "middle-elt: %d\n"
+                                 "smaller: %s\n"
+                                 "larger: %s")
+                         arr val middle-elt smaller larger))
+          (if (< val middle-elt)
+              (1+ (fb-helper smaller val))
+            (1+ (fb-helper larger val)))))
+       ((= larr 1)
+        (when (equal (elt arr 0) val) 0))
+       (t nil))))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (fb-helper [2 3 4] 3)
+
+  "arr: [2 3 4], val: 3
+  middle-elt: 3
+  smaller: [2 3]
+  larger: [4]"
+
+  ,*** Eval error ***  Wrong type argument: number-or-marker-p, nil
+#+end_src
+
+Let's change the half of the partition that's selected.
+
+#+begin_src emacs-lisp
+  (defun fb-helper (arr val)
+    (let ((larr (length arr)))
+      (cond
+       ((> larr 1)
+        (let* ((middle-elt (elt arr (/ larr 2)))
+               (partition (seq-partition arr 2))
+               (smaller (car partition))
+               (larger (cadr partition)))
+          (print (format (concat "arr: %s, val: %d\n"
+                                 "middle-elt: %d\n"
+                                 "smaller: %s\n"
+                                 "larger: %s")
+                         arr val middle-elt smaller larger))
+          (if (<= val middle-elt)                            ;; only change
+              (1+ (fb-helper smaller val))
+            (1+ (fb-helper larger val)))))
+       ((= larr 1)
+        (when (equal (elt arr 0) val) 0))
+       (t nil))))
+#+end_src
+
+#+begin_src emacs-lisp
+  ELISP> (fb-helper [2 3 4] 3)
+
+  "arr: [2 3 4], val: 3
+  middle-elt: 3
+  smaller: [2 3]
+  larger: [4]"
+
+  ⋮
+
+  "arr: [2 3], val: 3
+  middle-elt: 3
+  smaller: [2 3]
+  larger: nil"
+
+  ,*** Eval error ***  Variable binding depth exceeds max-specpdl-size
+#+end_src
+
+Nope.
+
+Oh, you're an idiot:
+
+#+begin_src emacs-lisp
+  ELISP> (find-binary [1 2 3 4 5] 5)
+
+  "arr: [1 2 3 4 5], val: 5
+  middle-elt: 3
+  smaller: [1 2]
+  larger: [3 4]"
+
+  "arr: [3 4], val: 5
+  middle-elt: 4
+  smaller: [3 4]
+  larger: nil"
+
+  nil
+#+end_src
+
+=seq-partition= doesn't partition a sequence into $n$ elements, it partitions a
+sequence into sub-sequences of length $n$ (except for the last
+sub-sequence). :facepalm::facepalm::facepalm: Maybe RTFM a little more closely
+(although looking back on the example, I can see why you thought it behaved the
+way it did...idiot). (Hey, be nice to yourself! Other people might see this and
+think you'd treat others this poorly. On the other hand, if you're worried
+about what others might think, maybe you should focus on being smarter.)
+
+* =safe-1+=
+Because my base cases are =0= or =nil=, I need something that can add 1 to 0 and
+propagate a =nil= up the recursive chain.
+
+#+begin_src emacs-lisp
+  (defun bs--safe-1+ (value)
+    "If VALUE is a number, add 1 to VALUE; otherwise, return nil."
+    (when (numberp value)
+        (1+ value)))
+#+end_src
+
+#+begin_quote
+Aside: I'm prefixing functions I add to the global namespace with
+~<exercise initials>--~ as one would do with private functions in a regular Emacs
+Lisp package.
+#+end_quote
+
+* +=seq-bisect=+ =array-bisect=
+Let's make a function that bisects a sequence.
+
+#+begin_src emacs-lisp
+  ELISP> (null [])
+  nil
+  ELISP> (null '())
+  t
+#+end_src
+
++How should it behave on an empty sequence? =(nil)=? I think that makes sense.+
+
+See ~binary-search-additional-tests.el~, and it will make sense. You're just
+return a cons cell of the bisected array.
+
+* =middle-index=
+Since I'm going to need to do this multiple times, it's good to be consistent
+about my approach, so let's write a function.
+
+#+begin_src emacs-lisp
+  ELISP> (elt [] 0)
+  ,*** Eval error ***  Args out of range: [], 0
+  ELISP> (elt [] nil)
+  ,*** Eval error ***  Wrong type argument: fixnump, nil
+  ELISP> (elt '() 0)
+  nil
+#+end_src
+
+I'm still favoring =nil= for the middle of an empty sequence.
+
+* Still dumb
+Read the algorithm:
+
+#+begin_quote
+The algorithm looks like this:
+
+1. Find the middle element of a sorted list and compare it with the item we're
+   looking for.
+2. /If the middle element is our item, then we're done!/ [italics mine]
+3. If the middle element is greater than our item, we can eliminate that
+   element and all the elements *after* it.
+4. If the middle element is less than our item, we can eliminate that element
+   and all the elements *before* it.
+   ⋮
+#+end_quote
+
+That means you need to directly check for equality with the middle element.
+
+* Now it seems to be working as one would expect
+
+#+begin_src emacs-lisp
+  (require 'cl)
+
+  (defun bs--safe-1+ (value)
+    "If VALUE is a number, add 1 to VALUE; otherwise, return nil."
+    (when (numberp value)
+      (1+ value)))
+
+  (defun bs--middle-index (seq)
+    (let ((len (length seq)))
+      (cond ((= len 0) nil)
+            ((evenp len) (1- (/ len 2))) ;; 1- is the result of 0-indexing
+            ((oddp len) (/ len 2))
+            ;; too many Arrested Development clips this morning
+            (t (error "I've made a terrible mistake.")))))
+
+  (defun bs--array-bisect (arr)
+    (unless (arrayp arr)
+      (error "ARR must be an array."))
+    (let ((length-arr (length arr)))
+      (cond ((= length-arr 0) nil)
+            ((= length-arr 1) (cons arr nil))
+            (t (let ((middle-index (bs--middle-index arr)))
+                 (cons
+                  ;; 1+ is due to exclusivity of seq-subseq's END argument
+                  (seq-subseq arr 0 (1+ middle-index))
+                  ;; 1+ is there to not include middle element twice
+                  (seq-subseq arr (1+ middle-index))))))))
+
+  (defun find-binary (array value)
+
+    (defun fb-helper (arr val)
+      (let ((larr (length arr)))
+        (cond
+         ((> larr 1)
+          (let* ((middle-elt (elt arr (bs--middle-index arr)))
+                 (bisection (bs--array-bisect arr))
+                 (left (car-safe bisection))
+                 (right (cdr-safe bisection)))
+            (print (format (concat "arr: %s, val: %d\n"
+                                   "middle-elt: %d\n"
+                                   "left: %s\n"
+                                   "right: %s")
+                           arr val middle-elt left right))
+            (cond ((= val middle-elt) 0)
+                  ((< val middle-elt) (bs--safe-1+ (fb-helper left val)))
+                  (t (bs--safe-1+ (fb-helper right val))))))
+         ((= larr 1)
+          (when (equal (elt arr 0) val) 0))
+         (t nil))))
+
+    (fb-helper array value))
+#+end_src
+
+The problem is that I can't tell what the tests are asking for. The number of
+steps to find =value= in =array=?
+
+#+begin_src emacs-lisp
+  (ert-deftest finds-a-value-in-an-array-with-one-element ()
+    (should (= (find-binary [6] 6) 0)))
+
+
+  (ert-deftest finds-a-value-in-the-middle-of-an-array ()
+    (should (= (find-binary [1 3 4 6 8 9 11] 6) 3)))
+
+
+  (ert-deftest finds-a-value-at-the-beginning-of-an-array ()
+    (should (= (find-binary [1 3 4 6 8 9 11] 1) 0)))
+
+
+  (ert-deftest finds-a-value-at-the-end-of-an-array ()
+    (should (= (find-binary [1 3 4 6 8 9 11] 11) 6)))
+
+
+  (ert-deftest finds-a-value-in-an-array-of-odd-length ()
+    (should
+     (= (find-binary [1 3 5 8 13 21 34 55 89 144 233 377 634] 144) 9)))
+#+end_src
+
+These tests make no sense to me. ¯\_(ツ)_/¯
+
+Wait a minute, yes they do: the return value is the index of the element. You
+are such an idiot :facepalm::facepalm::facepalm:
+
+In that case, I'm going to change ~bs--array-bisect~ to ~bs--split-array~, and I
+can safely get rid of ~bs--safe-1+~.
+
+* Ignore everything above this
+Convince yourself that
+
+#+begin_src emacs-lisp
+  ((< val middle-elt)
+   ;; (fb-helper left val (1+ (- abs-index middle-index)))
+   (fb-helper left val abs-index))
+#+end_src
+
+works and you don't need to adjust the absolute index when entering the "left"
+branch of the array.
+
+* All the cruft I couldn't use
+
+#+begin_src emacs-lisp
+  (defun bs--safe-1+ (value)
+    "If VALUE is a number, add 1 to VALUE; otherwise, return nil."
+    (when (numberp value)
+      (1+ value)))
+
+  (defun bs--array-bisect (arr)
+    (unless (arrayp arr)
+      (error "ARR must be an array."))
+    (let ((length-arr (length arr)))
+      (cond ((= length-arr 0) nil)
+            ((= length-arr 1) (cons arr nil))
+            (t (let ((middle-index (bs--middle-index arr)))
+                 (cons
+                  ;; 1+ is due to exclusivity of seq-subseq's END argument
+                  (seq-subseq arr 0 (1+ middle-index))
+                  ;; 1+ is there to not include middle element twice
+                  (seq-subseq arr (1+ middle-index))))))))
+#+end_src
+
+** testing for the cruft
+
+#+begin_src emacs-lisp
+  (declare-function bs--safe-1+ "binary-search.el" (value))
+  (declare-function bs--array-bisect "binary-search.el" (arr))
+
+  (ert-deftest safe-1+-integer ()
+    (should (= 2 (bs--safe-1+ 1))))
+
+  (ert-deftest safe-1+-nil ()
+    (should-not (bs--safe-1+ nil)))
+
+  (ert-deftest array-bisect-requires-array ()
+    (should-error (bs--array-bisect '(:foo :bar))))
+
+  ;; use car-safe/cdr-safe to safely unpack a bisected array
+  (ert-deftest array-bisect-empty-array ()
+    (should-not (bs--array-bisect [])))
+
+  (ert-deftest array-bisect-singleton ()
+    (should (equal '([:foo]) (bs--array-bisect [:foo]))))
+
+  (ert-deftest array-bisect-two-elements ()
+    (should (equal '([:foo] . [:bar]) (bs--array-bisect [:foo :bar]))))
+
+  ;; always favor the left/car side for array of odd length
+  (ert-deftest array-bisect-three-elements ()
+    (should (equal '([:foo :bar] . [:baz])
+                   (bs--array-bisect [:foo :bar :baz]))))
+
+  (ert-deftest array-bisect-string-even-length ()
+    (should (equal '("foo" . "bar") (bs--array-bisect "foobar"))))
+
+  (ert-deftest array-bisect-string-odd-length ()
+    (should (equal '("taco" . "cat") (bs--array-bisect "tacocat"))))
+#+end_src
+
+* What I learned from community solutions
+Use ~aref~ for arrays instead of ~elt~ (maybe?). The syntax is the same, and both
+functions are implemented in C, but ~aref~ should be faster because [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Arrays.html][elements of
+arrays are accessed in constant time]] while elements of lists are accessed in
+linear time.
