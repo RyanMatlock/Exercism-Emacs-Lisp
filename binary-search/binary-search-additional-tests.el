@@ -10,7 +10,7 @@
 (declare-function bs--middle-index "binary-search.el" (seq))
 ;; (declare-function bs--array-bisect "binary-search.el" (arr))
 (declare-function bs--split-array "binary-search.el" (arr))
-
+(declare-function find-binary "binary-search.el" (array value))
 
 ;; (ert-deftest safe-1+-integer ()
 ;;   (should (= 2 (bs--safe-1+ 1))))
@@ -82,6 +82,15 @@ value shouldn't really matter."
   "I don't think bs--split-array will be called on an empty array, but just in
 case, let's define that behavior."
   (should-not (bs--split-array [])))
+
+(ert-deftest find-binary-find-every-element-of-list ()
+  (let* ((ns (number-sequence 0 12))
+         (2-to-ns (apply #'vector (mapcar #'(lambda (n) (expt 2 n)) ns))))
+    (seq-do
+     #'(lambda (n)
+         (should (equal n (find-binary 2-to-ns (expt 2 n)))))
+     ns)))
+
 
 (provide 'binary-search-additional-tests)
 ;;; binary-search-additional-tests.el ends here
