@@ -389,3 +389,9 @@ branch of the array.
   (ert-deftest array-bisect-string-odd-length ()
     (should (equal '("taco" . "cat") (bs--array-bisect "tacocat"))))
 #+end_src
+
+* What I learned from community solutions
+Use ~aref~ for arrays instead of ~elt~ (maybe?). The syntax is the same, and both
+functions are implemented in C, but ~aref~ should be faster because [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Arrays.html][elements of
+arrays are accessed in constant time]] while elements of lists are accessed in
+linear time.
