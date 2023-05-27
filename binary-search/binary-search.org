@@ -318,3 +318,74 @@ are such an idiot :facepalm::facepalm::facepalm:
 
 In that case, I'm going to change ~bs--array-bisect~ to ~bs--split-array~, and I
 can safely get rid of ~bs--safe-1+~.
+
+* Ignore everything above this
+Convince yourself that
+
+#+begin_src emacs-lisp
+  ((< val middle-elt)
+   ;; (fb-helper left val (1+ (- abs-index middle-index)))
+   (fb-helper left val abs-index))
+#+end_src
+
+works and you don't need to adjust the absolute index when entering the "left"
+branch of the array.
+
+* All the cruft I couldn't use
+
+#+begin_src emacs-lisp
+  (defun bs--safe-1+ (value)
+    "If VALUE is a number, add 1 to VALUE; otherwise, return nil."
+    (when (numberp value)
+      (1+ value)))
+
+  (defun bs--array-bisect (arr)
+    (unless (arrayp arr)
+      (error "ARR must be an array."))
+    (let ((length-arr (length arr)))
+      (cond ((= length-arr 0) nil)
+            ((= length-arr 1) (cons arr nil))
+            (t (let ((middle-index (bs--middle-index arr)))
+                 (cons
+                  ;; 1+ is due to exclusivity of seq-subseq's END argument
+                  (seq-subseq arr 0 (1+ middle-index))
+                  ;; 1+ is there to not include middle element twice
+                  (seq-subseq arr (1+ middle-index))))))))
+#+end_src
+
+** testing for the cruft
+
+#+begin_src emacs-lisp
+  (declare-function bs--safe-1+ "binary-search.el" (value))
+  (declare-function bs--array-bisect "binary-search.el" (arr))
+
+  (ert-deftest safe-1+-integer ()
+    (should (= 2 (bs--safe-1+ 1))))
+
+  (ert-deftest safe-1+-nil ()
+    (should-not (bs--safe-1+ nil)))
+
+  (ert-deftest array-bisect-requires-array ()
+    (should-error (bs--array-bisect '(:foo :bar))))
+
+  ;; use car-safe/cdr-safe to safely unpack a bisected array
+  (ert-deftest array-bisect-empty-array ()
+    (should-not (bs--array-bisect [])))
+
+  (ert-deftest array-bisect-singleton ()
+    (should (equal '([:foo]) (bs--array-bisect [:foo]))))
+
+  (ert-deftest array-bisect-two-elements ()
+    (should (equal '([:foo] . [:bar]) (bs--array-bisect [:foo :bar]))))
+
+  ;; always favor the left/car side for array of odd length
+  (ert-deftest array-bisect-three-elements ()
+    (should (equal '([:foo :bar] . [:baz])
+                   (bs--array-bisect [:foo :bar :baz]))))
+
+  (ert-deftest array-bisect-string-even-length ()
+    (should (equal '("foo" . "bar") (bs--array-bisect "foobar"))))
+
+  (ert-deftest array-bisect-string-odd-length ()
+    (should (equal '("taco" . "cat") (bs--array-bisect "tacocat"))))
+#+end_src

@@ -7,12 +7,9 @@
 
 (require 'cl)
 
-;; (defun bs--safe-1+ (value)
-;;   "If VALUE is a number, add 1 to VALUE; otherwise, return nil."
-;;   (when (numberp value)
-;;     (1+ value)))
-
 (defun bs--middle-index (seq)
+  "Find the index of the middle element of sequence SEQ; on sequences of even
+length, return the value closer to zero."
   (let ((len (length seq)))
     (cond ((= len 0) nil)
           ((evenp len) (1- (/ len 2))) ;; 1- is the result of 0-indexing
@@ -20,20 +17,10 @@
           ;; too many Arrested Development clips this morning
           (t (error "I've made a terrible mistake.")))))
 
-;; (defun bs--array-bisect (arr)
-;;   (unless (arrayp arr)
-;;     (error "ARR must be an array."))
-;;   (let ((length-arr (length arr)))
-;;     (cond ((= length-arr 0) nil)
-;;           ((= length-arr 1) (cons arr nil))
-;;           (t (let ((middle-index (bs--middle-index arr)))
-;;                (cons
-;;                 ;; 1+ is due to exclusivity of seq-subseq's END argument
-;;                 (seq-subseq arr 0 (1+ middle-index))
-;;                 ;; 1+ is there to not include middle element twice
-;;                 (seq-subseq arr (1+ middle-index))))))))
-
 (defun bs--split-array (arr)
+  "Split array ARR at the middle element and return a cons cell of the array
+from index 0 to one less than the middle element and the array from one greater
+than the middle element to the end of the array."
   (unless (arrayp arr)
     (error "ARR must be an array."))
   (let ((length-arr (length arr)))
@@ -46,26 +33,8 @@
                      (seq-subseq arr (1+ middle-index))))))))
 
 (defun find-binary (array value)
-
-  ;; (defun fb-helper (arr val)
-  ;;   (let ((larr (length arr)))
-  ;;     (cond
-  ;;      ((> larr 1)
-  ;;       (let* ((middle-elt (elt arr (bs--middle-index arr)))
-  ;;              (bisection (bs--array-bisect arr))
-  ;;              (left (car-safe bisection))
-  ;;              (right (cdr-safe bisection)))
-  ;;         (print (format (concat "arr: %s, val: %d\n"
-  ;;                                "middle-elt: %d\n"
-  ;;                                "left: %s\n"
-  ;;                                "right: %s")
-  ;;                        arr val middle-elt left right))
-  ;;         (cond ((= val middle-elt) 0)
-  ;;               ((< val middle-elt) (bs--safe-1+ (fb-helper left val)))
-  ;;               (t (bs--safe-1+ (fb-helper right val))))))
-  ;;      ((= larr 1)
-  ;;       (when (equal (elt arr 0) val) 0))
-  ;;      (t nil))))
+  "Check if VALUE is in ARRAY using a binary search and return its index if it
+is; otherwise return nil."
 
   (defun fb-helper (arr val abs-index)
     (let ((larr (length array))
@@ -81,7 +50,7 @@
                (cond ((null middle-elt) nil)
                      ((= val middle-elt) (+ abs-index middle-index))
                      ((< val middle-elt)
-                      (fb-helper left val (1+ (- abs-index middle-index))))
+                      (fb-helper left val abs-index))
                      (t (fb-helper right val (1+ (+ abs-index
                                                     middle-index))))))))))
 
