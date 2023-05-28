@@ -1,0 +1,47 @@
+#+title: Affine Cipher
+
+* Helper functions
+** ~ac--coprimep~
+The equation for the affine cipher is \[ E(x) = (ai + b) \mod m \] where $a$
+and $m$ must be [[https://en.wikipedia.org/wiki/Coprime_integers][coprime]]. It looks like the easiest way to determine if they are
+is to implement the [[https://www.khanacademy.org/computing/computer-science/cryptography/modarithmetic/a/the-euclidean-algorithm][Euclidean GCD algorithm]], so let's write a function that
+calculates that, and if it's 1, the numbers are coprime.
+
+* Debugging
+Having an issue extracting values from keys.
+
+#+begin_src emacs-lisp
+  ELISP> (alist-get "a" '(("a" . 6) ("b" . 17)))
+  nil
+  ELISP> (alist-get :foo '((:foo . 6) (:bar . 17)))
+  6 (#o6, #x6, ?\C-f)
+#+end_src
+
+which is a problem for
+
+#+begin_src emacs-lisp
+  (defun encode (phrase key)
+    (let ((a (alist-get "a" key))
+          (b (alist-get "b" key))
+          (m 26))
+      (print (format (concat "a: %s\tm: %s\n"
+                             "wholenums?: %s")
+                     a m (and (wholenump a) (wholenump m))))
+      (unless (ac--coprimep a m)
+        (print (format "a: %s\tm: %s" a m))
+        (error "a and m must be coprime."))
+      (defun encode-char (c)
+        (let* ((lowercase (number-sequence ?a ?z))
+               (uppercase (number-sequence ?A ?Z))
+               (letters (append uppercase lowercase)))
+          ))))
+#+end_src
+
+Ohh.
+
+#+begin_src emacs-lisp
+  ELISP> (alist-get "a" '(("a" . 6) ("b" . 17)) nil nil #'string=)
+  6 (#o6, #x6, ?\C-f)
+#+end_src
+
+That's kind of annoying.
