@@ -66,3 +66,7 @@ This is $\bigO{m}$, but the [[https://www.geeksforgeeks.org/euclidean-algorithms
 m}$[fn::Of course, $m=26$ in this case, so it's never going to take /that/ long
 to run, and it's going to take more of my time to do this the right way, +but I
 might as well do it+.]
+
+* Things I learned about from community solutions
+There's a function, ~apply-partially~, that does exactly what it sounds like:
+allows for partial function application.
