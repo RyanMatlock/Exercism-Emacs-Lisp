@@ -18,6 +18,14 @@
     (error "N and M must be whole numbers."))
   (eq 1 (ac--gcd n m)))
 
+(defun ac--mmi (a m)
+  "Return the modular multiplicative inverse X such that
+(`=' 1 (`mod' (`*' A X) M)) is t."
+  ;; ultra-naive implementation -- do this the right way with extended
+  ;; Euclidean GCD algorithm
+  (let ((xs (number-sequence 2 (1- m))))
+    (car-safe (seq-filter #'(lambda (x) (= 1 (mod (* a x) m))) xs))))
+
 (defun encode (phrase key)
   (let ((a (alist-get "a" key nil nil #'string=))
         (b (alist-get "b" key nil nil #'string=))
@@ -46,9 +54,26 @@
                " ")))
 
 (defun decode (phrase key)
-  ;; (error
-  ;;  "Delete this S-Expression and write your own implementation")
-  )
+  (let ((a (alist-get "a" key nil nil #'string=))
+        (b (alist-get "b" key nil nil #'string=))
+        (m 26)
+        (phrase (replace-regexp-in-string "[[:space:]]+" "" phrase)))
+
+    (unless (ac--coprimep a m)
+      (error "a and m must be coprime."))
+
+    (defun decode-number (y)
+      (let ((a-inv (ac--mmi a m)))
+        (mod (* a-inv (- y b)) m)))
+
+    (defun decode-char (c)
+      (let ((lowercase (number-sequence ?a ?z)))
+        (cond ((member c lowercase)
+               (let ((c-offset (car lowercase)))
+                 (+ (decode-number (- c c-offset)) c-offset)))
+              (t c))))
+
+    (mapconcat #'string (seq-map #'decode-char phrase) "")))
 
 
 (provide 'affine-cipher)

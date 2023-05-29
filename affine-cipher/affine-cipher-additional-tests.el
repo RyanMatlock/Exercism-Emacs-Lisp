@@ -8,6 +8,7 @@
 (load-file "affine-cipher.el")
 (declare-function ac--gcd "affine-cipher.el" (p q))
 (declare-function ac--coprimep "affine-cipher.el" (n m))
+(declare-function ac--mmi "affine-cipher.el" (a m))
 
 (ert-deftest gcd-simple-example ()
   (should (eq 5 (ac--gcd 10 15))))
@@ -39,6 +40,16 @@
 (ert-deftest coprimep-medium-shared-factor ()
   (should-not (ac--coprimep (* 2 13 29)
                             (* 3 13 37))))
+
+(ert-deftest mmi-easy-example ()
+  "Found at
+https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/"
+  (should (eq 4 (ac--mmi 3 11))))
+
+(ert-deftest mmi-another-easy-example ()
+  "Found at
+https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/"
+  (should (eq 12 (ac--mmi 10 17))))
 
 (provide 'affine-cipher-additional-tests)
 ;;; affine-cipher-additional-tests.el ends here
