@@ -1,3 +1,5 @@
+#+latex_header: \newcommand\bigO[1]{\mathcal{O}\left(#1\right)}
+#+html_head: \( \newcommand\bigO[1]{\mathcal{O}\left(#1\right)} \)
 #+title: Affine Cipher
 
 * Helper functions
@@ -45,3 +47,22 @@ Ohh.
 #+end_src
 
 That's kind of annoying.
+
+* Refactoring
+I implemented the modular multiplicative inverse function in the lazy/naïve
+way.
+
+#+begin_src emacs-lisp
+  (defun ac--mmi (a m)
+    "Return the modular multiplicative inverse X such that
+  (`=' 1 (`mod' (`*' A X) M)) is t."
+    ;; ultra-naive implementation -- do this the right way with extended
+    ;; Euclidean GCD algorithm
+    (let ((xs (number-sequence 2 (1- m))))
+      (car-safe (seq-filter #'(lambda (x) (= 1 (mod (* a x) m))) xs))))
+#+end_src
+
+This is $\bigO{m}$, but the [[https://www.geeksforgeeks.org/euclidean-algorithms-basic-and-extended/][extended Euclidean algorithm]] is $\bigO{\log
+m}$[fn::Of course, $m=26$ in this case, so it's never going to take /that/ long
+to run, and it's going to take more of my time to do this the right way, +but I
+might as well do it+.]

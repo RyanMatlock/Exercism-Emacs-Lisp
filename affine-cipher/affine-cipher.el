@@ -21,12 +21,14 @@
 (defun ac--mmi (a m)
   "Return the modular multiplicative inverse X such that
 (`=' 1 (`mod' (`*' A X) M)) is t."
-  ;; ultra-naive implementation -- do this the right way with extended
-  ;; Euclidean GCD algorithm
+  ;; ultra-naive implementation -- you could do this the right way with
+  ;; the extended Euclidean GCD algorithm, but you're looking at a savings of
+  ;; O(log m) vs O(m), and m is always 26
   (let ((xs (number-sequence 2 (1- m))))
     (car-safe (seq-filter #'(lambda (x) (= 1 (mod (* a x) m))) xs))))
 
 (defun encode (phrase key)
+  "Encode letters string PHRASE using KEY using the affine cipher."
   (let ((a (alist-get "a" key nil nil #'string=))
         (b (alist-get "b" key nil nil #'string=))
         (m 26)
@@ -54,6 +56,7 @@
                " ")))
 
 (defun decode (phrase key)
+  "Decode letters string PHRASE using KEY using the affine cipher."
   (let ((a (alist-get "a" key nil nil #'string=))
         (b (alist-get "b" key nil nil #'string=))
         (m 26)
